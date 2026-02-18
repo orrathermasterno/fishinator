@@ -1,12 +1,19 @@
 #pragma once
 
 #include <cstdint>
+#include <cmath>
 
 typedef uint64_t Bitboard;
 inline constexpr uint64_t ONE = 1;
+#define C64(constant)  ((uint64_t)constant)
 
 enum Color {
   WHITE, BLACK, BOTH = 2
+};
+
+enum Piece: std::uint8_t {
+    PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING,
+    ALL_PIECES
 };
 
 // Little-Endian Rank-File Mapping
@@ -18,7 +25,8 @@ enum Square: int {
   a5, b5, c5, d5, e5, f5, g5, h5,
   a6, b6, c6, d6, e6, f6, g6, h6,
   a7, b7, c7, d7, e7, f7, g7, h7,
-  a8, b8, c8, d8, e8, f8, g8, h8
+  a8, b8, c8, d8, e8, f8, g8, h8,
+  ILLEGAL_SQ
 };
 
 
@@ -70,12 +78,43 @@ constexpr Bitboard Rank6_const = Rank1_const << (8 * 5);
 constexpr Bitboard Rank7_const = Rank1_const << (8 * 6);
 constexpr Bitboard Rank8_const = Rank1_const << (8 * 7);
 
+constexpr Bitboard MAIN_DIAG = 0x8040201008040201ULL; // a1-h8 diagonal
+constexpr Bitboard MAIN_ANTIDIAG = 0x0102040810204080ULL; // h1-a8 antidiagonal
 
 
 
-Bitboard set_bit(Bitboard bitboard, int square);
-Bitboard get_bit(Bitboard bitboard, int square);
-Bitboard pop_bit(Bitboard bitboard, int square);  
+constexpr Bitboard set_bit(Bitboard bitboard, int square) { return (bitboard |= ONE << square); }
+constexpr Bitboard get_bit(Bitboard bitboard, int square) { return (bitboard & ONE << square); }
+constexpr Bitboard pop_bit(Bitboard bitboard, int square) { return (bitboard &= ~(ONE << square)); }  
+
+// Brian Kernighan's way
+constexpr Bitboard Kernighan_population_count(Bitboard bitboard) {
+  int count = 0;
+  while (bitboard) {
+      count++;
+      bitboard &= bitboard - 1;
+  }
+  return count;
+}
+// compiler intrinsic
+inline int population_count(Bitboard bb) {
+    return __builtin_popcountll(bb); 
+}
+// compiler intrinsic
+// simplest loop implementation: use (bitboard & -bitboard) - 1 with population_count
+inline int bit_scan_forward(Bitboard bb) {
+    if (!bb) return ILLEGAL_SQ; // __builtin_ctzll is undefined at 0
+    return __builtin_ctzll(bb);
+}
+
+constexpr Rank get_rank(Square sq) { return Rank(sq >> 3); }
+constexpr File get_file(Square sq) { return File(sq & 7); }
+constexpr Bitboard get_rank_bb(Rank r) { return Rank1_const << (8 * r); }
+constexpr Bitboard get_file_bb(File f) { return FileA_const << f; }
+
+constexpr int sign_mask(int num) { return num >> 31; } // -1 if num<0, else 0
+
+
 
 void print_bitboard(Bitboard bitboard);
 
@@ -134,4 +173,20 @@ constexpr Bitboard generate_knight_attacks(Bitboard bb){
       shift<static_cast<Direction>(EAST + EAST + SOUTH)>(bb);
 }
 
-Bitboard mask_rook_occupancies(int square);
+
+Bitboard rank_mask(Square sq);
+Bitboard file_mask(Square sq);
+Bitboard diag_mask(Square sq);
+Bitboard anti_diag_mask(Square sq);
+
+
+constexpr bool is_valid_square(Square sq) { return sq>=a1 && sq<=h8; }
+constexpr bool is_safe_shift(Square sq, Direction d) {
+  Square target_sq = (Square)(sq+d);
+  return is_valid_square(target_sq) 
+          && abs(get_file(sq) - get_file(target_sq)) <= 1;
+}
+
+// Bitboard generate_sliding_attacks(Piece pt, Square sq, Bitboard blockers);
+// // generates rook/bishop occupancy masks. generate_sliding_attacks(...) wrapper
+// Bitboard generate_sliding_mask(Piece piece, Square sq);
