@@ -140,46 +140,6 @@ constexpr Bitboard shift(Bitboard bb) {
                               : 0;
 }
 
-template<Color C>
-constexpr Bitboard generate_pawn_attacks(Bitboard bb){
-    return C == WHITE ? shift<NORTH_WEST>(bb) | shift<NORTH_EAST>(bb)
-                        : shift<SOUTH_WEST>(bb) | shift<SOUTH_EAST>(bb);
-}
-
-constexpr Bitboard generate_king_attacks(Bitboard bb){
-    return shift<NORTH_WEST>(bb) | shift<NORTH>(bb) | shift<NORTH_EAST>(bb) | shift<SOUTH_EAST>(bb) | 
-        shift<SOUTH>(bb) | shift<SOUTH_WEST>(bb) | shift<EAST>(bb) | shift<WEST>(bb);
-}
-
-
-//         noNoWe    noNoEa
-//             +15  +17
-//              |     |
-// noWeWe  +6 __|     |__+10  noEaEa
-//               \   /
-//                >0<
-//            __ /   \ __
-// soWeWe -10   |     |   -6  soEaEa
-//              |     |
-//             -17  -15
-//         soSoWe    soSoEa
-constexpr Bitboard generate_knight_attacks(Bitboard bb){
-    return shift<static_cast<Direction>(NORTH + NORTH + WEST)>(bb) |
-      shift<static_cast<Direction>(NORTH + NORTH + EAST)>(bb) |  
-      shift<static_cast<Direction>(SOUTH + SOUTH + WEST)>(bb) |
-      shift<static_cast<Direction>(SOUTH + SOUTH + EAST)>(bb) | 
-      shift<static_cast<Direction>(WEST + WEST + NORTH)>(bb) | 
-      shift<static_cast<Direction>(WEST + WEST + SOUTH)>(bb) | 
-      shift<static_cast<Direction>(EAST + EAST + NORTH)>(bb) | 
-      shift<static_cast<Direction>(EAST + EAST + SOUTH)>(bb);
-}
-
-
-Bitboard rank_mask(Square sq);
-Bitboard file_mask(Square sq);
-Bitboard diag_mask(Square sq);
-Bitboard anti_diag_mask(Square sq);
-
 
 constexpr bool is_valid_square(Square sq) { return sq>=a1 && sq<=h8; }
 constexpr bool is_safe_shift(Square sq, Direction d) {

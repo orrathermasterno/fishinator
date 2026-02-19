@@ -37,16 +37,71 @@ constexpr int slider_bits[2][SQ_AMOUNT] = {
 };
 
 class Attacks {
-public:
+    Attacks() = delete;
+
     // Plain Magics approach
     static Bitboard bishop_attacks[SQ_AMOUNT][SIZE_FOR_BISHOP]; // 256K
     static Bitboard rook_attacks[SQ_AMOUNT][SIZE_FOR_ROOK]; // 2048K
 
+    static Bitboard king_attacks[SQ_AMOUNT];
+    static Bitboard knight_attacks[SQ_AMOUNT];
+    static Bitboard pawn_attacks[BOTH][SQ_AMOUNT];
 
+public:
+    /**********************************\
+    ==================================
+    
+                Non-magics init
+    
+    ==================================
+    \**********************************/
+    template<Color C>
+    static inline Bitboard generate_pawn_attacks(Bitboard bb){
+        return C == WHITE ? shift<NORTH_WEST>(bb) | shift<NORTH_EAST>(bb)
+                            : shift<SOUTH_WEST>(bb) | shift<SOUTH_EAST>(bb);
+    }
+
+    static inline Bitboard generate_king_attacks(Bitboard bb){
+        return shift<NORTH_WEST>(bb) | shift<NORTH>(bb) | shift<NORTH_EAST>(bb) | shift<SOUTH_EAST>(bb) | 
+            shift<SOUTH>(bb) | shift<SOUTH_WEST>(bb) | shift<EAST>(bb) | shift<WEST>(bb);
+    }
+
+    //         noNoWe    noNoEa
+    //             +15  +17
+    //              |     |
+    // noWeWe  +6 __|     |__+10  noEaEa
+    //               \   /
+    //                >0<
+    //            __ /   \ __
+    // soWeWe -10   |     |   -6  soEaEa
+    //              |     |
+    //             -17  -15
+    //         soSoWe    soSoEa
+    static inline Bitboard generate_knight_attacks(Bitboard bb){
+        return shift<static_cast<Direction>(NORTH + NORTH + WEST)>(bb) |
+        shift<static_cast<Direction>(NORTH + NORTH + EAST)>(bb) |  
+        shift<static_cast<Direction>(SOUTH + SOUTH + WEST)>(bb) |
+        shift<static_cast<Direction>(SOUTH + SOUTH + EAST)>(bb) | 
+        shift<static_cast<Direction>(WEST + WEST + NORTH)>(bb) | 
+        shift<static_cast<Direction>(WEST + WEST + SOUTH)>(bb) | 
+        shift<static_cast<Direction>(EAST + EAST + NORTH)>(bb) | 
+        shift<static_cast<Direction>(EAST + EAST + SOUTH)>(bb);
+    }
+
+    static inline Bitboard get_knight_attack(Square sq) {
+        return knight_attacks[sq];
+    }
+    static inline Bitboard get_king_attack(Square sq) {
+        return king_attacks[sq];
+    }
+    template<Color C>
+    static inline Bitboard get_pawn_attack(Square sq) {
+        return pawn_attacks[C][sq];
+    }
     /**********************************\
      ==================================
     
-                    Magics
+                Magics init
     
     ==================================
     \**********************************/
@@ -60,25 +115,36 @@ public:
         }
     };
 
+private:
     static Magic RookMagics[SQ_AMOUNT];
     static Magic BishopMagics[SQ_AMOUNT];
 
+public:
     static Bitboard generate_sliding_attacks(SliderPiece pt, Square sq, Bitboard blockers);
     // generates rook/bishop occupancy masks. generate_sliding_attacks(...) wrapper
     static Bitboard generate_sliding_mask(SliderPiece piece, Square sq);
 
-    // magic multipliers now hardcoded into "attacks.cpp", this function does not run
+    // runs every startup to init slider tables; totally deterministic unless seed changed
     template <typename TPrng, size_t TableSize>
     static void generate_magics(SliderPiece piece, Square sq, Bitboard (&target_table)[SQ_AMOUNT][TableSize], Magic (&target_magics)[SQ_AMOUNT]);
 
-
+    // slider getters
     static inline Bitboard get_rook_attack(Bitboard occ, Square sq) {
-        occ &= RookMagics[sq].mask;
-        occ *= RookMagics[sq].magic;
-        int bits = slider_bits[rook][sq];
-        occ >>= 64-bits;
-        return rook_attacks[sq][occ];
+        return rook_attacks[sq][RookMagics[sq].index(occ, slider_bits[rook][sq])];
+    }
+    static inline Bitboard get_bishop_attack(Bitboard occ, Square sq) {
+        return bishop_attacks[sq][BishopMagics[sq].index(occ, slider_bits[bishop][sq])];
+    }
+    static inline Bitboard get_queen_attack(Bitboard occ, Square sq) {
+        return get_bishop_attack(occ, sq) | get_rook_attack(occ, sq);
     }
 
-
+    /**********************************\
+    ==================================
+    
+            Everything init
+    
+    ==================================
+    \**********************************/
+    static void init();
 };

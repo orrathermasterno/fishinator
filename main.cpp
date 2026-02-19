@@ -8,13 +8,7 @@
 
 int main() {
 
-  int square;
-
-  for(square = 0; square < 64; square++)
-    Attacks::generate_magics<Xorshift, SIZE_FOR_ROOK>(rook, Square(square), Attacks::rook_attacks, Attacks::RookMagics);
-
-  for(square = 0; square < 64; square++)
-    Attacks::generate_magics<Xorshift, SIZE_FOR_BISHOP>(bishop, Square(square), Attacks::bishop_attacks, Attacks::BishopMagics);
+  Attacks::init();
 
   int sq = e4;
   Bitboard bb = 0ULL;

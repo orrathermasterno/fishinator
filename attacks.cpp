@@ -136,6 +136,9 @@
 // };
 Bitboard Attacks::rook_attacks[SQ_AMOUNT][SIZE_FOR_ROOK];
 Bitboard Attacks::bishop_attacks[SQ_AMOUNT][SIZE_FOR_BISHOP];
+Bitboard Attacks::king_attacks[SQ_AMOUNT];
+Bitboard Attacks::knight_attacks[SQ_AMOUNT];
+Bitboard Attacks::pawn_attacks[BOTH][SQ_AMOUNT];
 
 Attacks::Magic Attacks::RookMagics[SQ_AMOUNT];
 Attacks::Magic Attacks::BishopMagics[SQ_AMOUNT];
@@ -176,9 +179,8 @@ void Attacks::generate_magics(SliderPiece piece, Square sq, Bitboard (&target_ta
     Bitboard blockers[SIZE_FOR_ROOK]; // occupancy mask power set 
     Bitboard reference[SIZE_FOR_ROOK]; // holds attack bbs corresponding to blockers at same index
     int used[SIZE_FOR_ROOK] = {}, count = 0;
-    Bitboard mask = generate_sliding_mask(piece, sq); target_magics[sq].mask = mask;
+    target_magics[sq].mask = generate_sliding_mask(piece, sq);
     TPrng prng{prng_seed};
-    uint64_t magic_number;
     bool fail; size_t index;
 
     // generate all subsets of a mask using Carry-Rippler trick
@@ -188,17 +190,17 @@ void Attacks::generate_magics(SliderPiece piece, Square sq, Bitboard (&target_ta
         reference[blocker_index] = generate_sliding_attacks(piece, sq, curr_subset);
         blocker_index++;
 
-        curr_subset = (curr_subset - mask) & mask;
+        curr_subset = (curr_subset - target_magics[sq].mask) & target_magics[sq].mask;
     } while(curr_subset);
 
-    for (size_t attempt = 0; attempt < 100000000; attempt++) {
-        magic_number = prng.sparse_rand64();
-        if(population_count((mask * magic_number) & 0xFF00000000000000ULL) < 6) continue;
+    while(true) { 
+        target_magics[sq].magic = prng.sparse_rand64();
+        if(population_count((target_magics[sq].mask * target_magics[sq].magic) & 0xFF00000000000000ULL) < 6) continue;
 
         fail = false;
         count++;
         for (int i = 0; !fail && i < (1 << slider_bits[piece][sq]); i ++) {
-            index = (size_t)((blockers[i] * magic_number) >> (64 - slider_bits[piece][sq]));
+            index = target_magics[sq].index(blockers[i], slider_bits[piece][sq]);
             if (used[index] < count){
                 used[index] = count;
                 target_table[sq][index] = reference[i];
@@ -206,14 +208,12 @@ void Attacks::generate_magics(SliderPiece piece, Square sq, Bitboard (&target_ta
             else if (target_table[sq][index] != reference[i]) fail = true;
         }
         if(!fail) {
-            target_magics[sq].magic = magic_number;
             return;
         }
     }
-    return;
 }
 
-// explicit xorshift instantiation
+// explicit xorshift instantiations
 template void Attacks::generate_magics<Xorshift, SIZE_FOR_BISHOP>(
     SliderPiece, 
     Square, 
@@ -227,3 +227,15 @@ template void Attacks::generate_magics<Xorshift, SIZE_FOR_ROOK>(
     Bitboard (&)[SQ_AMOUNT][SIZE_FOR_ROOK], 
     Magic (&)[SQ_AMOUNT]
 );
+
+void Attacks::init() {
+    for (size_t sq = a1; sq<=h8; sq++) {
+        generate_magics<Xorshift, SIZE_FOR_ROOK>(rook, Square(sq), rook_attacks, RookMagics);
+        generate_magics<Xorshift, SIZE_FOR_BISHOP>(bishop, Square(sq), bishop_attacks, BishopMagics);
+
+        king_attacks[sq] = generate_king_attacks(set_bit(0ULL, sq));
+        knight_attacks[sq] = generate_knight_attacks(set_bit(0ULL, sq));
+        pawn_attacks[WHITE][sq] = generate_pawn_attacks<WHITE>(set_bit(0ULL, sq));
+        pawn_attacks[BLACK][sq] = generate_pawn_attacks<BLACK>(set_bit(0ULL, sq));  
+    }
+}
