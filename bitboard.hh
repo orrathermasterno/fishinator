@@ -6,6 +6,7 @@
 typedef uint64_t Bitboard;
 inline constexpr uint64_t ONE = 1;
 #define C64(constant)  ((uint64_t)constant)
+constexpr size_t SQ_AMOUNT = 64;
 
 enum Color {
   WHITE, BLACK, BOTH = 2
