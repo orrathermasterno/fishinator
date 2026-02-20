@@ -15,12 +15,13 @@ int main() {
   bb = set_bit(bb, sq);
   bb = set_bit(bb, e2);
   bb = set_bit(bb, g4);
+  bb = set_bit(bb, g6);
   print_bitboard(bb);
-  Bitboard get_attack_bb = Attacks::get_rook_attack(bb, Square(sq));
+  Bitboard get_attack_bb = Attacks::get_bishop_attack(bb, Square(sq));
 
   print_bitboard(get_attack_bb);
 
-  Bitboard corr_sliding_attack = Attacks::generate_sliding_attacks(rook, Square(sq), bb);
+  Bitboard corr_sliding_attack = Attacks::generate_sliding_attacks(bishop, Square(sq), bb);
   print_bitboard(corr_sliding_attack);
 
 }

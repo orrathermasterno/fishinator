@@ -88,6 +88,7 @@ public:
         shift<static_cast<Direction>(EAST + EAST + SOUTH)>(bb);
     }
 
+    //getters
     static inline Bitboard get_knight_attack(Square sq) {
         return knight_attacks[sq];
     }

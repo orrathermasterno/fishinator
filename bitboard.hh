@@ -147,7 +147,3 @@ constexpr bool is_safe_shift(Square sq, Direction d) {
   return is_valid_square(target_sq) 
           && abs(get_file(sq) - get_file(target_sq)) <= 1;
 }
-
-// Bitboard generate_sliding_attacks(Piece pt, Square sq, Bitboard blockers);
-// // generates rook/bishop occupancy masks. generate_sliding_attacks(...) wrapper
-// Bitboard generate_sliding_mask(Piece piece, Square sq);
