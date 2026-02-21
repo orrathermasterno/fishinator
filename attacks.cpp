@@ -143,7 +143,7 @@ Bitboard Attacks::pawn_attacks[BOTH][SQ_AMOUNT];
 Attacks::Magic Attacks::RookMagics[SQ_AMOUNT];
 Attacks::Magic Attacks::BishopMagics[SQ_AMOUNT];
 
-Bitboard Attacks::generate_sliding_attacks(SliderPiece piece, Square sq, Bitboard blockers) {
+Bitboard Attacks::generate_sliding_attacks(SliderPiece piece, int sq, Bitboard blockers) {
     Bitboard  attacks             = 0;
     Direction RookDirections[4]   = {NORTH, SOUTH, EAST, WEST};
     Direction BishopDirections[4] = {NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST};
@@ -152,10 +152,10 @@ Bitboard Attacks::generate_sliding_attacks(SliderPiece piece, Square sq, Bitboar
 
     for(Direction d : (piece == rook ? RookDirections : BishopDirections)) {
 
-        Square curr_sq = sq;
+        int curr_sq = sq;
 
         while(is_safe_shift(curr_sq, d)) {
-            curr_sq = Square(curr_sq + d);
+            curr_sq = curr_sq + d;
             next_attack_bit = set_bit(0ULL, curr_sq);
 
             attacks |= next_attack_bit;
@@ -168,13 +168,13 @@ Bitboard Attacks::generate_sliding_attacks(SliderPiece piece, Square sq, Bitboar
     return attacks;
 }
 
-Bitboard Attacks::generate_sliding_mask(SliderPiece piece, Square sq) {
+Bitboard Attacks::generate_sliding_mask(SliderPiece piece, int sq) {
     Bitboard edges = ((Rank1_const | Rank8_const) & ~get_rank_bb(get_rank(sq))) | ((FileA_const | FileH_const) & ~get_file_bb(get_file(sq)));
     return generate_sliding_attacks(piece, sq, 0ULL) & ~edges;
 }
 
 template <typename TPrng, size_t TableSize>
-void Attacks::generate_magics(SliderPiece piece, Square sq, Bitboard (&target_table)[SQ_AMOUNT][TableSize], Magic (&target_magics)[SQ_AMOUNT]
+void Attacks::generate_magics(SliderPiece piece, int sq, Bitboard (&target_table)[SQ_AMOUNT][TableSize], Magic (&target_magics)[SQ_AMOUNT]
     ){
     Bitboard blockers[SIZE_FOR_ROOK]; // occupancy mask power set 
     Bitboard reference[SIZE_FOR_ROOK]; // holds attack bbs corresponding to blockers at same index
@@ -216,22 +216,22 @@ void Attacks::generate_magics(SliderPiece piece, Square sq, Bitboard (&target_ta
 // explicit xorshift instantiations
 template void Attacks::generate_magics<Xorshift, SIZE_FOR_BISHOP>(
     SliderPiece, 
-    Square, 
+    int, 
     Bitboard (&)[SQ_AMOUNT][SIZE_FOR_BISHOP], 
     Magic (&)[SQ_AMOUNT]
 );
 
 template void Attacks::generate_magics<Xorshift, SIZE_FOR_ROOK>(
     SliderPiece, 
-    Square, 
+    int, 
     Bitboard (&)[SQ_AMOUNT][SIZE_FOR_ROOK], 
     Magic (&)[SQ_AMOUNT]
 );
 
 void Attacks::init() {
     for (size_t sq = a1; sq<=h8; sq++) {
-        generate_magics<Xorshift, SIZE_FOR_ROOK>(rook, Square(sq), rook_attacks, RookMagics);
-        generate_magics<Xorshift, SIZE_FOR_BISHOP>(bishop, Square(sq), bishop_attacks, BishopMagics);
+        generate_magics<Xorshift, SIZE_FOR_ROOK>(rook, sq, rook_attacks, RookMagics);
+        generate_magics<Xorshift, SIZE_FOR_BISHOP>(bishop, sq, bishop_attacks, BishopMagics);
 
         king_attacks[sq] = generate_king_attacks(set_bit(0ULL, sq));
         knight_attacks[sq] = generate_knight_attacks(set_bit(0ULL, sq));

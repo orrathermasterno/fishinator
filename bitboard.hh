@@ -17,6 +17,11 @@ enum Piece: std::uint8_t {
     ALL_PIECES
 };
 
+enum ColouredPiece: std::uint8_t {
+  W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
+  B_PAWN, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING
+};
+
 // Little-Endian Rank-File Mapping
 enum Square: int {
   a1, b1, c1, d1, e1, f1, g1, h1,
@@ -57,6 +62,19 @@ enum File: int {
 enum Rank: int {
   RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8
 };
+
+enum CastlingRights: uint8_t {
+    NO_CASTLING,
+    WHITE_OO, // 0001
+    WHITE_OOO = WHITE_OO << 1, // 0010
+    BLACK_OO  = WHITE_OO << 2, // 0100
+    BLACK_OOO = WHITE_OO << 3, // 1000
+
+    WHITE_EITHER_CASTLING = WHITE_OO | WHITE_OOO,
+    BLACK_EITHER_CASTLING = BLACK_OO | BLACK_OOO,
+    ALL_CASTLING   = WHITE_EITHER_CASTLING | BLACK_EITHER_CASTLING,
+};
+
 
 constexpr Bitboard FileA_const = 0x0101010101010101ULL;
 constexpr Bitboard FileB_const = FileA_const << 1;
@@ -108,8 +126,8 @@ inline int bit_scan_forward(Bitboard bb) {
     return __builtin_ctzll(bb);
 }
 
-constexpr Rank get_rank(Square sq) { return Rank(sq >> 3); }
-constexpr File get_file(Square sq) { return File(sq & 7); }
+constexpr Rank get_rank(int sq) { return Rank(sq >> 3); }
+constexpr File get_file(int sq) { return File(sq & 7); }
 constexpr Bitboard get_rank_bb(Rank r) { return Rank1_const << (8 * r); }
 constexpr Bitboard get_file_bb(File f) { return FileA_const << f; }
 
@@ -141,9 +159,14 @@ constexpr Bitboard shift(Bitboard bb) {
 }
 
 
-constexpr bool is_valid_square(Square sq) { return sq>=a1 && sq<=h8; }
-constexpr bool is_safe_shift(Square sq, Direction d) {
+constexpr bool is_valid_square(int sq) { return sq>=a1 && sq<=h8; }
+constexpr bool is_safe_shift(int sq, Direction d) {
   Square target_sq = (Square)(sq+d);
   return is_valid_square(target_sq) 
           && abs(get_file(sq) - get_file(target_sq)) <= 1;
 }
+
+void print_board_state();
+
+
+constexpr auto StartFEN   = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";

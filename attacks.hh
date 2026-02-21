@@ -121,22 +121,22 @@ private:
     static Magic BishopMagics[SQ_AMOUNT];
 
 public:
-    static Bitboard generate_sliding_attacks(SliderPiece pt, Square sq, Bitboard blockers);
+    static Bitboard generate_sliding_attacks(SliderPiece pt, int sq, Bitboard blockers);
     // generates rook/bishop occupancy masks. generate_sliding_attacks(...) wrapper
-    static Bitboard generate_sliding_mask(SliderPiece piece, Square sq);
+    static Bitboard generate_sliding_mask(SliderPiece piece, int sq);
 
     // runs every startup to init slider tables; totally deterministic unless seed changed
     template <typename TPrng, size_t TableSize>
-    static void generate_magics(SliderPiece piece, Square sq, Bitboard (&target_table)[SQ_AMOUNT][TableSize], Magic (&target_magics)[SQ_AMOUNT]);
+    static void generate_magics(SliderPiece piece, int sq, Bitboard (&target_table)[SQ_AMOUNT][TableSize], Magic (&target_magics)[SQ_AMOUNT]);
 
     // slider getters
-    static inline Bitboard get_rook_attack(Bitboard occ, Square sq) {
+    static inline Bitboard get_rook_attack(Bitboard occ, int sq) {
         return rook_attacks[sq][RookMagics[sq].index(occ, slider_bits[rook][sq])];
     }
-    static inline Bitboard get_bishop_attack(Bitboard occ, Square sq) {
+    static inline Bitboard get_bishop_attack(Bitboard occ, int sq) {
         return bishop_attacks[sq][BishopMagics[sq].index(occ, slider_bits[bishop][sq])];
     }
-    static inline Bitboard get_queen_attack(Bitboard occ, Square sq) {
+    static inline Bitboard get_queen_attack(Bitboard occ, int sq) {
         return get_bishop_attack(occ, sq) | get_rook_attack(occ, sq);
     }
 

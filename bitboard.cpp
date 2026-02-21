@@ -1,5 +1,6 @@
 #include "bitboard.hh"
 #include <iostream>
+#include "board.hh"
 
 void print_bitboard(Bitboard bb) {
     int square = 0;
@@ -18,21 +19,3 @@ void print_bitboard(Bitboard bb) {
     }
     std::cout << "\n   a b c d e f g h\n\n";
 }
-
-// Bitboard rank_mask(Square sq) {return  C64(Rank1_const) << (sq & 56);}
-
-// Bitboard file_mask(Square sq) {return C64(FileA_const) << get_file(sq);}
-
-// Bitboard diag_mask(Square sq) {
-//    int diag = 8*get_file(sq) - (sq & 56); // offset 
-//    int nort = -diag & sign_mask(diag);
-//    int sout =  diag & sign_mask(-diag);
-//    return (MAIN_DIAG >> sout) << nort;
-// }
-
-// Bitboard anti_diag_mask(Square sq) {
-//    int diag =56 - 8*get_file(sq) - (sq & 56); // offset
-//    int nort = -diag & sign_mask(diag);
-//    int sout =  diag & sign_mask(-diag);
-//    return (MAIN_ANTIDIAG >> sout) << nort;
-// }
