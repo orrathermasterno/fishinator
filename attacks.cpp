@@ -176,7 +176,7 @@ Bitboard Attacks::generate_sliding_mask(SliderPiece piece, int sq) {
 template <typename TPrng, size_t TableSize>
 void Attacks::generate_magics(SliderPiece piece, int sq, Bitboard (&target_table)[SQ_AMOUNT][TableSize], Magic (&target_magics)[SQ_AMOUNT]
     ){
-    Bitboard blockers[SIZE_FOR_ROOK]; // occupancy mask power set 
+    Bitboard blockers[SIZE_FOR_ROOK]; // blockersupancy mask power set 
     Bitboard reference[SIZE_FOR_ROOK]; // holds attack bbs corresponding to blockers at same index
     int used[SIZE_FOR_ROOK] = {}, count = 0;
     target_magics[sq].mask = generate_sliding_mask(piece, sq);

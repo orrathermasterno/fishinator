@@ -89,15 +89,14 @@ public:
     }
 
     //getters
-    static inline Bitboard get_knight_attack(Square sq) {
+    static inline Bitboard get_knight_attack(int sq) {
         return knight_attacks[sq];
     }
-    static inline Bitboard get_king_attack(Square sq) {
+    static inline Bitboard get_king_attack(int sq) {
         return king_attacks[sq];
     }
-    template<Color C>
-    static inline Bitboard get_pawn_attack(Square sq) {
-        return pawn_attacks[C][sq];
+    static inline Bitboard get_pawn_attack(int sq, Color c) {
+        return pawn_attacks[c][sq];
     }
     /**********************************\
      ==================================
@@ -110,9 +109,9 @@ public:
         Bitboard mask;
         uint64_t magic; 
 
-        constexpr size_t index(Bitboard occupancy, int bits) {
-            Bitboard relevant_occ = occupancy & mask;
-            return (size_t)((relevant_occ * magic) >> (SQ_AMOUNT - bits));
+        constexpr size_t index(Bitboard blockers, int bits) {
+            Bitboard relevant_blockers = blockers & mask;
+            return (size_t)((relevant_blockers * magic) >> (SQ_AMOUNT - bits));
         }
     };
 
@@ -122,7 +121,7 @@ private:
 
 public:
     static Bitboard generate_sliding_attacks(SliderPiece pt, int sq, Bitboard blockers);
-    // generates rook/bishop occupancy masks. generate_sliding_attacks(...) wrapper
+    // generates rook/bishop blockersupancy masks. generate_sliding_attacks(...) wrapper
     static Bitboard generate_sliding_mask(SliderPiece piece, int sq);
 
     // runs every startup to init slider tables; totally deterministic unless seed changed
@@ -130,14 +129,14 @@ public:
     static void generate_magics(SliderPiece piece, int sq, Bitboard (&target_table)[SQ_AMOUNT][TableSize], Magic (&target_magics)[SQ_AMOUNT]);
 
     // slider getters
-    static inline Bitboard get_rook_attack(Bitboard occ, int sq) {
-        return rook_attacks[sq][RookMagics[sq].index(occ, slider_bits[rook][sq])];
+    static inline Bitboard get_rook_attack(Bitboard blockers, int sq) {
+        return rook_attacks[sq][RookMagics[sq].index(blockers, slider_bits[rook][sq])];
     }
-    static inline Bitboard get_bishop_attack(Bitboard occ, int sq) {
-        return bishop_attacks[sq][BishopMagics[sq].index(occ, slider_bits[bishop][sq])];
+    static inline Bitboard get_bishop_attack(Bitboard blockers, int sq) {
+        return bishop_attacks[sq][BishopMagics[sq].index(blockers, slider_bits[bishop][sq])];
     }
-    static inline Bitboard get_queen_attack(Bitboard occ, int sq) {
-        return get_bishop_attack(occ, sq) | get_rook_attack(occ, sq);
+    static inline Bitboard get_queen_attack(Bitboard blockers, int sq) {
+        return get_bishop_attack(blockers, sq) | get_rook_attack(blockers, sq);
     }
 
     /**********************************\

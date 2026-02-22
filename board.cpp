@@ -3,11 +3,12 @@
 #include <sstream>
 #include <cctype>
 #include <string>
+#include "attacks.hh"
 
 Bitboard Board::PieceBB[ALL_PIECES];
-Bitboard Board::ColorBB[BOTH];
+Bitboard Board::ColorBB[INVALID_COLOR];
 
-constexpr std::string_view EncodedPieces("PNBRQKpnbrqk");
+constexpr std::string_view EncodedPieces("PNBRQKxxpnbrqk");
 
 void Board::print_board_state()
 {
@@ -21,12 +22,12 @@ void Board::print_board_state()
 
             int piece = -1;
             
-            for (int bb_piece = PAWN; bb_piece <= KING; bb_piece++)
+            for (int bb_piece = PAWN; bb_piece <= KING; bb_piece++) 
             {
-                if (get_bit(Board::PieceBB[bb_piece], square)) {
+                if (get_bit(Board::PieceBB[bb_piece], square)) { // ugly
                     piece = bb_piece;
                     if (get_bit(Board::ColorBB[BLACK], square))
-                        piece += ALL_PIECES;
+                        piece += 8;
                     break;
                 }
             }
@@ -53,9 +54,37 @@ void Board::print_board_state()
 }
 
 // to be improved 
-void Board::set_piece(ColouredPiece p, int sq) {
-    PieceBB[p % ALL_PIECES] |= set_bit(PieceBB[p % ALL_PIECES], sq);
-    ColorBB[p / ALL_PIECES] |= set_bit(ColorBB[p / ALL_PIECES], sq);
+void Board::set_piece(ColoredPiece p, int sq) {
+
+    Bitboard square_bb = set_bit(0ULL, sq);
+
+    PieceBB[type_of(p)] |= square_bb;
+    ColorBB[color_of(p)] |= square_bb;
+
+    ColorBB[BOTH] |=  square_bb;
+}
+
+// returns a bitboard containing pieces eyeing target square 
+// to get actual attackers one still has to intersect with color boards 
+Bitboard Board::attackers_of(int sq, Bitboard blockers) {
+    return (Attacks::get_pawn_attack(sq, WHITE) & get_colored_piece_bb<PAWN>(BLACK))
+        | (Attacks::get_pawn_attack(sq, BLACK) & get_colored_piece_bb<PAWN>(WHITE))
+        | (Attacks::get_knight_attack(sq) & get_piece_bb<KNIGHT>())
+        | (Attacks::get_king_attack(sq) & get_piece_bb<KING>())
+        | (Attacks::get_rook_attack(blockers, sq) & get_joint_piece_bb(ROOK, QUEEN))
+        | (Attacks::get_bishop_attack(blockers, sq) & get_joint_piece_bb(BISHOP, QUEEN))
+    ;
+}
+
+// like Attacked attacked, not just eyed 
+// color param stands for attacker color
+bool Board::is_attacked(int sq, Bitboard blockers, Color color) {
+    return (Attacks::get_rook_attack(blockers, sq) & get_colored_joint_piece_bb(color, ROOK, QUEEN))
+        || (Attacks::get_bishop_attack(blockers, sq) & get_colored_joint_piece_bb(color, BISHOP, QUEEN))
+        || (Attacks::get_knight_attack(sq) & get_colored_piece_bb<KNIGHT>(color))
+        || (Attacks::get_pawn_attack(sq, Color(!color)) & get_colored_piece_bb<PAWN>(color))
+        || (Attacks::get_king_attack(sq) & get_colored_piece_bb<KING>(color))
+    ;
 }
 
 void Board::parse_FEN(const std::string& fen) {
@@ -91,7 +120,7 @@ void Board::parse_FEN(const std::string& fen) {
             sq += 2 * SOUTH;
         }
         else if ((piece = EncodedPieces.find(token)) != std::string::npos) {
-            set_piece(ColouredPiece(piece), sq);
+            set_piece(ColoredPiece(piece), sq);
             sq++;
         }
     }

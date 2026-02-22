@@ -9,7 +9,7 @@ inline constexpr uint64_t ONE = 1;
 constexpr size_t SQ_AMOUNT = 64;
 
 enum Color {
-  WHITE, BLACK, BOTH = 2
+  WHITE, BLACK, BOTH = 2, INVALID_COLOR
 };
 
 enum Piece: std::uint8_t {
@@ -17,9 +17,9 @@ enum Piece: std::uint8_t {
     ALL_PIECES
 };
 
-enum ColouredPiece: std::uint8_t {
+enum ColoredPiece: std::uint8_t {
   W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
-  B_PAWN, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING
+  B_PAWN=8, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING
 };
 
 // Little-Endian Rank-File Mapping

@@ -17,7 +17,7 @@ public:
     }
 
     uint64_t sparse_rand64() {
-        return rand64() & rand64() & rand64();
+        return rand64() & rand64() & rand64(); // sparse int64s make good magic numbers
     }
 };
 
