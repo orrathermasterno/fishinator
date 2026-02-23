@@ -116,14 +116,20 @@ constexpr Bitboard Kernighan_population_count(Bitboard bitboard) {
   return count;
 }
 // compiler intrinsic
-inline int population_count(Bitboard bb) {
+constexpr int population_count(Bitboard bb) {
     return __builtin_popcountll(bb); 
 }
 // compiler intrinsic
 // simplest loop implementation: use (bitboard & -bitboard) - 1 with population_count
-inline int bit_scan_forward(Bitboard bb) {
+constexpr int bit_scan_forward(Bitboard bb) {
     if (!bb) return ILLEGAL_SQ; // __builtin_ctzll is undefined at 0
     return __builtin_ctzll(bb);
+}
+// bit_scan_forward wrapper that additionally pops the lsb
+constexpr int pop_lsb(Bitboard& b) {
+    int lsb = bit_scan_forward(b);
+    b &= ~(ONE << lsb);
+    return lsb;
 }
 
 constexpr Rank get_rank(int sq) { return Rank(sq >> 3); }
@@ -169,4 +175,15 @@ constexpr bool is_safe_shift(int sq, Direction d) {
 void print_board_state();
 
 
-constexpr auto StartFEN   = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+constexpr auto START_FEN   = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+const char* const square_to_string[64] = {
+    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
+    "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
+    "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+    "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+    "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
+    "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+    "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
+    "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
+};

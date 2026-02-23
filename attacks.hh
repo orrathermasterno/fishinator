@@ -121,7 +121,7 @@ private:
 
 public:
     static Bitboard generate_sliding_attacks(SliderPiece pt, int sq, Bitboard blockers);
-    // generates rook/bishop blockersupancy masks. generate_sliding_attacks(...) wrapper
+    // generates rook/bishop occupancy masks. generate_sliding_attacks(...) wrapper
     static Bitboard generate_sliding_mask(SliderPiece piece, int sq);
 
     // runs every startup to init slider tables; totally deterministic unless seed changed
@@ -147,4 +147,16 @@ public:
     ==================================
     \**********************************/
     static void init();
+
+    template<Piece P>
+    static inline Bitboard get_attack_of(int sq, Bitboard blockers=0ULL) {
+        switch(P) {
+            case KNIGHT: return knight_attacks[sq];
+            case KING: return king_attacks[sq];
+            case BISHOP: return get_bishop_attack(blockers, sq);
+            case ROOK: return get_rook_attack(blockers, sq);
+            case QUEEN: return get_queen_attack(blockers, sq);
+            default: return 0ULL;
+        }
+    }
 };
