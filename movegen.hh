@@ -11,8 +11,8 @@ enum MoveFlag: uint8_t {
 };
 
 enum MoveType: uint8_t {
-    QUIET,  CAPTURE, 
-    GET_OUT_OF_CHECK 
+    QUIET, CAPTURE, QUIET_AND_CAPTURE,
+    GET_OUT_OF_CHECK // this one is supposed to be useful during quiescence search
 };
 
 class Move {
@@ -50,6 +50,9 @@ public:
 
     template<Piece P>
     void generate_pseudolegals_for(const Board& board, Bitboard targets, Color ActiveColor);
+
+    template<MoveFlag Flag>
+    void add_pawn_moves(Bitboard moves_to, Direction dir);
 
     template<MoveType T, Color ActiveColor>
     void generate_pawn_pseudolegals(const Board& board, Bitboard targets);
