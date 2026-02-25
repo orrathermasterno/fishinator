@@ -75,6 +75,11 @@ enum CastlingRights: uint8_t {
     ALL_CASTLING   = WHITE_EITHER_CASTLING | BLACK_EITHER_CASTLING,
 };
 
+constexpr Bitboard WHITE_OO_BLOCKERS  = (1ULL << f1) | (1ULL << g1);
+constexpr Bitboard WHITE_OOO_BLOCKERS = (1ULL << b1) | (1ULL << c1) | (1ULL << d1);
+constexpr Bitboard BLACK_OO_BLOCKERS  = (1ULL << f8) | (1ULL << g8);
+constexpr Bitboard BLACK_OOO_BLOCKERS = (1ULL << b8) | (1ULL << c8) | (1ULL << d8);
+
 
 constexpr Bitboard FileA_const = 0x0101010101010101ULL;
 constexpr Bitboard FileB_const = FileA_const << 1;

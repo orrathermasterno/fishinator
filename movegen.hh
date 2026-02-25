@@ -48,8 +48,8 @@ public:
 
     void print_movelist() const;
 
-    template<Piece P>
-    void generate_pseudolegals_for(const Board& board, Bitboard targets, Color ActiveColor);
+    template<Piece P, Color ActiveColor>
+    void generate_pseudolegals_for(const Board& board, Bitboard targets);
 
     template<MoveFlag Flag>
     void add_pawn_moves(Bitboard moves_to, Direction dir);
@@ -57,4 +57,9 @@ public:
     template<MoveType T, Color ActiveColor>
     void generate_pawn_pseudolegals(const Board& board, Bitboard targets);
 
+    template<Color ActiveColor>
+    void generate_castling(const Board& board);
+
+    template<MoveType T, Color ActiveColor>
+    void generate_pseudolegals(const Board& board);
 };
