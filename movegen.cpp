@@ -18,7 +18,7 @@ void MoveList::print_movelist() const {
     }
 }
 
-// unsuitable for kings and pawns
+// unsuitable for pawns
 // // unsure how to handle capture flag rn, subject to change 
 // // // what if i just discard them completely for now what then 
 // template<Piece P, CaptureFlag IsCapture>
@@ -178,7 +178,7 @@ void MoveList::generate_pseudolegals(const Board& board) {
     generate_pseudolegals_for<KING, ActiveColor>(board, king_targets);
 
     if constexpr (T == GET_OUT_OF_CHECK) {
-        Bitboard king_attackers = Board::enemy_attackers_of(board.get_king_sq(ActiveColor), board.ColorBB[BOTH], ActiveColor);
+        Bitboard king_attackers = board.enemy_attackers_of(board.get_king_sq(ActiveColor), board.ColorBB[BOTH], ActiveColor);
 
         if (king_attackers & (king_attackers-1)) return; // double check cannot be resolved by any moves save the king's
     }

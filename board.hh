@@ -6,52 +6,52 @@
 class Board {
 public:
     // piece boards 
-    static Bitboard PieceBB[ALL_PIECES];
-    static Bitboard ColorBB[INVALID_COLOR];
+    Bitboard PieceBB[ALL_PIECES];
+    Bitboard ColorBB[COLOR_NB];
 
-    inline static Color ActiveColor;
-    inline static CastlingRights Castling;
-    inline static Square EnPassant = ILLEGAL_SQ;
-    inline static int Ply;
-    inline static int FullMove;
+    Color ActiveColor;
+    CastlingRights Castling;
+    Square EnPassant = ILLEGAL_SQ;
+    int Ply;
+    int FullMove;
 
     void print_board_state();
     void set_piece(ColoredPiece p, int sq);
     void parse_FEN(const std::string& fenStr);
 
-    static inline Bitboard get_white_pawns() {
+    inline Bitboard get_white_pawns() const{
         return PieceBB[PAWN] & ColorBB[WHITE];
     }
 
     template<Piece P>
-    static inline Bitboard get_colored_piece_bb(Color C) {
+    inline Bitboard get_colored_piece_bb(Color C) const{
         return PieceBB[P] & ColorBB[C];
     }
 
     template<Piece P>
-    static inline Bitboard get_piece_bb() {
+    inline Bitboard get_piece_bb() const{
         return PieceBB[P];
     }
 
     template<typename... Pieces>
-    static inline Bitboard get_colored_joint_piece_bb(Color C, Pieces... pts) {
+    inline Bitboard get_colored_joint_piece_bb(Color C, Pieces... pts) const {
         return ColorBB[C] & (PieceBB[pts] | ...);
     }
 
     template<typename... Pieces>
-    static inline Bitboard get_joint_piece_bb(Pieces... pts) {
+    inline Bitboard get_joint_piece_bb(Pieces... pts) const {
         return (PieceBB[pts] | ...);
     }
 
-    static inline Piece type_of(ColoredPiece pc) { return Piece(pc & 7); }
+    inline Piece type_of(ColoredPiece pc) { return Piece(pc & 7); }
 
-    static inline Color color_of(ColoredPiece pc) { return Color(pc >> 3); }
+    inline Color color_of(ColoredPiece pc) { return Color(pc >> 3); }
 
-    static Bitboard attackers_of(int sq, Bitboard blockers);
-    static inline Bitboard enemy_attackers_of(int sq, Bitboard blockers, Color ActiveColor) {
+    Bitboard attackers_of(int sq, Bitboard blockers) const;
+    inline Bitboard enemy_attackers_of(int sq, Bitboard blockers, Color ActiveColor) const {
         return attackers_of(sq, blockers) & ColorBB[ActiveColor ^ 1];
     }
-    static bool is_attacked(int sq, Bitboard blockers, Color color);
+    bool is_attacked(int sq, Bitboard blockers, Color color);
 
     template<CastlingRights Cr>
     inline bool can_castle() const {

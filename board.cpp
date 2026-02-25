@@ -5,9 +5,6 @@
 #include <string>
 #include "attacks.hh"
 
-Bitboard Board::PieceBB[ALL_PIECES];
-Bitboard Board::ColorBB[INVALID_COLOR];
-
 constexpr std::string_view EncodedPieces("PNBRQKxxpnbrqk");
 
 void Board::print_board_state()
@@ -24,9 +21,9 @@ void Board::print_board_state()
             
             for (int bb_piece = PAWN; bb_piece <= KING; bb_piece++) 
             {
-                if (get_bit(Board::PieceBB[bb_piece], square)) { // ugly
+                if (get_bit(PieceBB[bb_piece], square)) { // ugly
                     piece = bb_piece;
-                    if (get_bit(Board::ColorBB[BLACK], square))
+                    if (get_bit(ColorBB[BLACK], square))
                         piece += 8;
                     break;
                 }
@@ -66,7 +63,7 @@ void Board::set_piece(ColoredPiece p, int sq) {
 
 // returns a bitboard containing pieces eyeing target square 
 // to get actual attackers one still has to intersect with color boards 
-Bitboard Board::attackers_of(int sq, Bitboard blockers) {
+Bitboard Board::attackers_of(int sq, Bitboard blockers) const {
     return (Attacks::get_pawn_attack(sq, WHITE) & get_colored_piece_bb<PAWN>(BLACK))
         | (Attacks::get_pawn_attack(sq, BLACK) & get_colored_piece_bb<PAWN>(WHITE))
         | (Attacks::get_knight_attack(sq) & get_piece_bb<KNIGHT>())

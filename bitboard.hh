@@ -9,7 +9,7 @@ inline constexpr uint64_t ONE = 1;
 constexpr size_t SQ_AMOUNT = 64;
 
 enum Color {
-  WHITE, BLACK, BOTH = 2, INVALID_COLOR
+  WHITE, BLACK, BOTH = 2, COLOR_NB
 };
 
 enum Piece: std::uint8_t {
