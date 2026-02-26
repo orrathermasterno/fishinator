@@ -1,7 +1,6 @@
 #pragma once 
 
 #include "bitboard.hh"
-
 constexpr uint64_t prng_seed = 6522720ULL; // arbitrary number. recorded for reproducibility
 
 enum SliderPiece: std::uint8_t {

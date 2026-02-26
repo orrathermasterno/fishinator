@@ -127,15 +127,15 @@ void MoveList::generate_pawn_pseudolegals(const Board& board, Bitboard targets) 
         }
 
         // en passant capture
-        if(board.EnPassant != ILLEGAL_SQ) {
-            Bitboard enpassant_attackers = normal_move_bb & Attacks::get_pawn_attack(board.EnPassant, Color(ActiveColor ^ 1));
+        if(board.get_ep() != ILLEGAL_SQ) {
+            Bitboard enpassant_attackers = normal_move_bb & Attacks::get_pawn_attack(board.get_ep(), Color(ActiveColor ^ 1));
 
             if (T == GET_OUT_OF_CHECK 
-                && (targets & set_bit(0ULL, board.EnPassant + Push))) // if enemy pawn push resulted in discovered check, en passant won't block it
+                && (targets & set_bit(0ULL, board.get_ep() + Push))) // if enemy pawn push resulted in discovered check, en passant won't block it
                 enpassant_attackers = 0ULL;
 
             while(enpassant_attackers) {
-                *last++ = Move(pop_lsb(enpassant_attackers), board.EnPassant, EP_CAPTURE_F);
+                *last++ = Move(pop_lsb(enpassant_attackers), board.get_ep(), EP_CAPTURE_F);
             }
         }
     }
@@ -144,15 +144,15 @@ void MoveList::generate_pawn_pseudolegals(const Board& board, Bitboard targets) 
 template<Color ActiveColor>
 void MoveList::generate_castling(const Board& board) {
     if constexpr (ActiveColor == WHITE) {
-        if ((board.Castling & WHITE_OO) && board.can_castle<WHITE_OO>()) 
+        if ((board.get_castling_rights() & WHITE_OO) && board.can_castle<WHITE_OO>()) 
             *last++ = Move(WHITE_KING_STARTING_SQ, WHITE_KING_OO_SQ, KING_CASTLE_F); 
-        if ((board.Castling & WHITE_OOO) && board.can_castle<WHITE_OOO>()) 
+        if ((board.get_castling_rights() & WHITE_OOO) && board.can_castle<WHITE_OOO>()) 
             *last++ = Move(WHITE_KING_STARTING_SQ, WHITE_KING_OOO_SQ, QUEEN_CASTLE_F); 
     } 
     else { // ActiveColor == BLACK
-        if ((board.Castling & BLACK_OO) && board.can_castle<BLACK_OO>()) 
+        if ((board.get_castling_rights() & BLACK_OO) && board.can_castle<BLACK_OO>()) 
             *last++ = Move(BLACK_KING_STARTING_SQ, BLACK_KING_OO_SQ, KING_CASTLE_F); 
-        if ((board.Castling & BLACK_OOO) && board.can_castle<BLACK_OOO>()) 
+        if ((board.get_castling_rights() & BLACK_OOO) && board.can_castle<BLACK_OOO>()) 
             *last++ = Move(BLACK_KING_STARTING_SQ, BLACK_KING_OOO_SQ, QUEEN_CASTLE_F); 
     }
 }
@@ -192,6 +192,7 @@ void MoveList::generate_pseudolegals(const Board& board) {
     generate_pseudolegals_for<QUEEN, ActiveColor>(board, targets);
 }
 
+// explicit instantiations
 template void MoveList::add_pawn_moves<QUIET_F>(Bitboard, Direction);
 template void MoveList::add_pawn_moves<KNIGHT_PROM_F>(Bitboard, Direction);
 template void MoveList::add_pawn_moves<BISHOP_PROM_F>(Bitboard, Direction);
