@@ -143,10 +143,13 @@ public:
         return bs->CapturedPiece;
     }
 
+    template<MoveSwitch sw>
     void move_piece(int sq_from, int sq_to, ColoredPiece p);
 
+    template<MoveSwitch sw>
     void make_promotion(int sq_from, int sq_to, ColoredPiece piece_to);
 
+    template<MoveSwitch sw>
     void castle(bool kingside);
 
     void make_move(Move& move, BoardState& new_state);

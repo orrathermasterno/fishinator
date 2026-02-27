@@ -145,27 +145,40 @@ void Board::parse_FEN(const std::string& fen) {
     }
 }
 
+template<MoveSwitch sw>
 void Board::move_piece(int from_square, int to_square, ColoredPiece p) {
+    if constexpr (sw == BACK) {
+        std::swap(to_square, from_square);
+    }
+
     set_piece<REMOVE_PIECE>(p, from_square);
     set_piece<ADD_PIECE>(p, to_square);
 }
 
+template<MoveSwitch sw>
 void Board::make_promotion(int from_square, int to_square, ColoredPiece piece_to) {
-    set_piece<REMOVE_PIECE>(make_colored_piece(ActiveColor, PAWN), from_square);
-    set_piece<ADD_PIECE>(piece_to, to_square);
+    if constexpr (sw == FORWARD) {
+        set_piece<REMOVE_PIECE>(make_colored_piece(ActiveColor, PAWN), from_square);
+        set_piece<ADD_PIECE>(piece_to, to_square);
+    }
+    else {
+        set_piece<REMOVE_PIECE>(piece_to, to_square);
+        set_piece<ADD_PIECE>(make_colored_piece(ActiveColor, PAWN), from_square);
+    }
 }
 
+template<MoveSwitch sw>
 void Board::castle(bool kingside) {
     if (kingside) {
-        if(ActiveColor == WHITE) move_piece(h1, f1, W_ROOK);
+        if(ActiveColor == WHITE) move_piece<sw>(h1, f1, W_ROOK);
 
-        else move_piece(h8, f8, B_ROOK);
+        else move_piece<sw>(h8, f8, B_ROOK);
     }
 
     else { // queenside
-        if(ActiveColor == WHITE) move_piece(a1, d1, W_ROOK);
+        if(ActiveColor == WHITE) move_piece<sw>(a1, d1, W_ROOK);
 
-        else move_piece(a8, d8, B_ROOK);
+        else move_piece<sw>(a8, d8, B_ROOK);
     }
 }
 
@@ -174,14 +187,17 @@ void Board::make_move(Move& move, BoardState& new_state) {
 
     int from_square = move.getFrom();
     int to_square = move.getTo();
-    int flag = move.getFlags();
+
     ColoredPiece moved_piece = Mailbox[from_square];
     ColoredPiece captured_piece = move.is_ep()? make_colored_piece(Color(ActiveColor^1), PAWN) : Mailbox[to_square];
     bool capture = (captured_piece != NO_PIECE);
 
+    std::cout << "is ep: " << move.is_ep() << "\n";
+
     new_state = *bs;
     new_state.Previous = bs;
     bs = &new_state;
+
     new_state.Castling = CastlingRights(uint8_t(new_state.Castling) & CastlingMasks[from_square] & CastlingMasks[to_square]);
     new_state.CapturedPiece = captured_piece;
     new_state.EnPassant = ILLEGAL_SQ;
@@ -194,7 +210,7 @@ void Board::make_move(Move& move, BoardState& new_state) {
         }
 
         if (move.is_castle()) {
-            castle(move.is_king_castle()); // moves rook
+            castle<FORWARD>(move.is_king_castle()); // moves rook
         }
     }
     else { // capture
@@ -206,10 +222,10 @@ void Board::make_move(Move& move, BoardState& new_state) {
     }
 
     // the move itself
-    if (!move.is_promotion()) move_piece(from_square, to_square, moved_piece);
+    if (!move.is_promotion()) move_piece<FORWARD>(from_square, to_square, moved_piece);
     else {
         ColoredPiece prom_to = move.get_promotion_type(ActiveColor);
-        make_promotion(from_square, to_square, prom_to);
+        make_promotion<FORWARD>(from_square, to_square, prom_to);
     }
 
     ActiveColor = Color(ActiveColor ^ 1);
@@ -217,10 +233,45 @@ void Board::make_move(Move& move, BoardState& new_state) {
 }
 
 void Board::unmake_move(Move& move) {
-    int from_square = move.getTo();
-    int to_square = move.getFrom();
-
     ActiveColor = Color(ActiveColor ^ 1);
-    bs = bs->Previous;
     Ply--;
+
+    int from_square = move.getFrom();
+    int to_square = move.getTo();
+
+    ColoredPiece moved_piece = Mailbox[to_square];
+    ColoredPiece captured_piece = bs->CapturedPiece;
+    bool capture = (captured_piece != NO_PIECE);
+
+    // the move itself
+    if (!move.is_promotion()) move_piece<BACK>(from_square, to_square, moved_piece);
+    else {
+        ColoredPiece prom_to = move.get_promotion_type(ActiveColor);
+        make_promotion<BACK>(from_square, to_square, prom_to);
+    }
+
+    // premove routine
+    if (!capture && move.is_castle()) {
+        castle<BACK>(move.is_king_castle());
+    }
+    else if (capture) {
+        if(move.is_ep()) {
+            Direction push = ActiveColor == WHITE ? NORTH : SOUTH;
+            set_piece<ADD_PIECE>(captured_piece, to_square-push);
+        }
+        else set_piece<ADD_PIECE>(captured_piece, to_square);
+    }
+
+    bs = bs->Previous;
 }
+
+
+// explicit instantiations
+template void Board::move_piece<FORWARD>(int, int, ColoredPiece);
+template void Board::move_piece<BACK>(int, int, ColoredPiece);
+
+template void Board::make_promotion<FORWARD>(int, int, ColoredPiece);
+template void Board::make_promotion<BACK>(int, int, ColoredPiece);
+
+template void Board::castle<FORWARD>(bool);
+template void Board::castle<BACK>(bool);
