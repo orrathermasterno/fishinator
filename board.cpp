@@ -176,8 +176,8 @@ void Board::make_move(Move& move, BoardState& new_state) {
     int to_square = move.getTo();
     int flag = move.getFlags();
     ColoredPiece moved_piece = Mailbox[from_square];
-    ColoredPiece captured_piece = Mailbox[to_square];
-    bool capture = type_of(moved_piece) == PAWN ? move.is_ep() : (captured_piece != NO_PIECE);
+    ColoredPiece captured_piece = move.is_ep()? make_colored_piece(Color(ActiveColor^1), PAWN) : Mailbox[to_square];
+    bool capture = (captured_piece != NO_PIECE);
 
     new_state = *bs;
     new_state.Previous = bs;
@@ -186,28 +186,41 @@ void Board::make_move(Move& move, BoardState& new_state) {
     new_state.CapturedPiece = captured_piece;
     new_state.EnPassant = ILLEGAL_SQ;
 
+    // premove routine
     if(!capture) {
-        if (move.is_promotion()) {
-            ColoredPiece prom_to = move.get_promotion_type(ActiveColor);
-            make_promotion(from_square, to_square, prom_to);
-        } else {
-            move_piece(from_square, to_square, moved_piece);
+        if (move.is_double_push()) { // if move was a double push, additionally update EnPassant state
+            Direction push = ActiveColor == WHITE ? NORTH : SOUTH;
+            new_state.EnPassant = to_square - push;
+        }
 
-            if (move.is_double_push()) { // if move was a double push, additionally update EnPassant state
-                Direction push = ActiveColor == WHITE ? NORTH : SOUTH;
-                new_state.EnPassant = to_square - push;
-            }
-
-            if (move.is_castle()) {
-                castle(move.is_king_castle());
-            }
+        if (move.is_castle()) {
+            castle(move.is_king_castle()); // moves rook
         }
     }
-
     else { // capture
+        if(move.is_ep()) {
+            Direction push = ActiveColor == WHITE ? NORTH : SOUTH;
+            set_piece<REMOVE_PIECE>(captured_piece, to_square-push);
+        }
+        else set_piece<REMOVE_PIECE>(captured_piece, to_square);
+    }
 
+    // the move itself
+    if (!move.is_promotion()) move_piece(from_square, to_square, moved_piece);
+    else {
+        ColoredPiece prom_to = move.get_promotion_type(ActiveColor);
+        make_promotion(from_square, to_square, prom_to);
     }
 
     ActiveColor = Color(ActiveColor ^ 1);
     Ply++;
+}
+
+void Board::unmake_move(Move& move) {
+    int from_square = move.getTo();
+    int to_square = move.getFrom();
+
+    ActiveColor = Color(ActiveColor ^ 1);
+    bs = bs->Previous;
+    Ply--;
 }

@@ -9,6 +9,10 @@ enum SetPieceSwitch {
     ADD_PIECE, REMOVE_PIECE
 };
 
+enum MoveSwitch {
+    FORWARD, BACK
+};
+
 // irreversible stuff for Copy-Make
 struct BoardState {
     CastlingRights Castling;
@@ -140,7 +144,11 @@ public:
     }
 
     void move_piece(int sq_from, int sq_to, ColoredPiece p);
+
     void make_promotion(int sq_from, int sq_to, ColoredPiece piece_to);
+
     void castle(bool kingside);
+
     void make_move(Move& move, BoardState& new_state);
+    void unmake_move(Move& move);
 };
