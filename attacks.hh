@@ -46,6 +46,9 @@ class Attacks {
     static Bitboard knight_attacks[SQ_AMOUNT];
     static Bitboard pawn_attacks[BOTH][SQ_AMOUNT];
 
+    // non-attack helper arrays
+    static Bitboard betweeen_sq[SQ_AMOUNT][SQ_AMOUNT]; 
+
 public:
     /**********************************\
     ==================================
@@ -138,6 +141,10 @@ public:
         return get_bishop_attack(blockers, sq) | get_rook_attack(blockers, sq);
     }
 
+    static inline Bitboard get_between_sq_bb(int sq1, int sq2) {
+        return betweeen_sq[sq1][sq2];
+    }
+
     /**********************************\
     ==================================
     
@@ -145,6 +152,7 @@ public:
     
     ==================================
     \**********************************/
+    static void init_between_bb();
     static void init();
 
     template<Piece P>

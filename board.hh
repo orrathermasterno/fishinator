@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bitboard.hh"
+#include "attacks.hh"
 #include <iostream>
 #include <algorithm>
 #include <cassert>
@@ -27,7 +28,7 @@ struct BoardState {
         CapturedPiece = NO_PIECE;
     }
 
-    // lacks 50-moves counter, at the very least
+    // lacks 50-moves counter and pinned boards, at the very least
 };
 
 class Board {
@@ -101,8 +102,8 @@ public:
     }
 
     Bitboard attackers_of(int sq, Bitboard blockers) const;
-    inline Bitboard enemy_attackers_of(int sq, Bitboard blockers, Color ActiveColor) const {
-        return attackers_of(sq, blockers) & ColorBB[ActiveColor ^ 1];
+    inline Bitboard enemy_attackers_of(int sq, Bitboard blockers, Color Color) const {
+        return attackers_of(sq, blockers) & ColorBB[Color ^ 1];
     }
     bool is_attacked(int sq, Bitboard blockers, Color color);
 
@@ -143,6 +144,59 @@ public:
         return bs->CapturedPiece;
     }
 
+    inline int get_castling_rook_sq(bool IsKingside) {
+        if (IsKingside) {
+            return ActiveColor==WHITE? h1 : h8;
+        }
+        return ActiveColor==WHITE? a1 : a8;
+    }
+
+    inline int is_pinned_by(int sq) { 
+        int king_sq = get_king_sq(ActiveColor);
+        Bitboard king_attackers = enemy_attackers_of(king_sq, ColorBB[ActiveColor^1], ActiveColor);
+        Bitboard slider_attackers = king_attackers & get_colored_joint_piece_bb(Color(ActiveColor^1), ROOK, QUEEN, BISHOP);
+        int attacker_sq;
+        Bitboard pinned_bb = set_bit(0ULL, sq);
+        Bitboard path;
+
+        while(slider_attackers) {
+            attacker_sq = pop_lsb(slider_attackers);
+            path = Attacks::get_between_sq_bb(king_sq, attacker_sq);
+
+            if((path & pinned_bb) && !more_than_one(path & ColorBB[ActiveColor])) 
+                return attacker_sq;
+        }
+
+        return ILLEGAL_SQ;
+    }
+
+    inline bool castling_path_is_safe(int king_sq, int rook_sq, bool IsKingside) {
+        Bitboard in_between = Attacks::get_between_sq_bb(king_sq, rook_sq);
+
+        if(!IsKingside) {
+            pop_lsb(in_between);
+        } 
+
+        int btw_sq;
+        while (in_between) {
+            btw_sq = pop_lsb(in_between);
+            
+            if(is_attacked(btw_sq, ColorBB[BOTH], Color(ActiveColor^1))) {
+                return false; 
+            }
+        }
+
+        return true; 
+    }
+
+    inline bool king_in_check() {
+        return is_attacked(get_king_sq(ActiveColor), ColorBB[BOTH], Color(ActiveColor^1));
+    }
+
+    inline int pawn_push_direction(Color c) {
+        return c == WHITE ? NORTH : SOUTH;
+    }
+
     template<MoveSwitch sw>
     void move_piece(int sq_from, int sq_to, ColoredPiece p);
 
@@ -154,4 +208,6 @@ public:
 
     void make_move(Move& move, BoardState& new_state);
     void unmake_move(Move& move);
+
+    bool legal(Move& move);
 };

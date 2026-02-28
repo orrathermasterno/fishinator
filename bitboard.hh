@@ -151,6 +151,11 @@ constexpr File get_file(int sq) { return File(sq & 7); }
 constexpr Bitboard get_rank_bb(Rank r) { return Rank1_const << (8 * r); }
 constexpr Bitboard get_file_bb(File f) { return FileA_const << f; }
 
+constexpr bool more_than_one(Bitboard bb) {
+  pop_lsb(bb);
+  return bb;
+}
+
 constexpr int sign_mask(int num) { return num >> 31; } // -1 if num<0, else 0
 
 

@@ -10,11 +10,13 @@ constexpr int BLACK_KING_OO_SQ = g8;
 constexpr int BLACK_KING_OOO_SQ = c8;
 
 void MoveList::print_movelist() const {
+    int i = 0;
    for (const Move* ptr = Moves; ptr < last; ++ptr) {
         Move m = *ptr; 
         
-        std::cout << "Move: " << square_to_string[m.getFrom()] << " to " << square_to_string[m.getTo()] 
+        std::cout << "Move " << i << ": " << square_to_string[m.getFrom()] << " to " << square_to_string[m.getTo()] 
             << " with flag " << m.getFlags() << "\n";
+        i++;
     }
 }
 
@@ -74,7 +76,7 @@ void MoveList::generate_pawn_pseudolegals(const Board& board, Bitboard targets) 
         }
 
         add_pawn_moves<QUIET_F>(one_ahead, Push); 
-        add_pawn_moves<QUIET_F>(two_ahead, Direction(Push*2));
+        add_pawn_moves<DOUBLE_PAWN_PUSH_F>(two_ahead, Direction(Push*2));
 
         // quiet promotions
         Bitboard promotions = shift<Push>(promotion_bb) & free_squares;
@@ -177,11 +179,10 @@ void MoveList::generate_pseudolegals(const Board& board) {
     Bitboard king_targets = (T == GET_OUT_OF_CHECK) ? ~board.ColorBB[ActiveColor] : targets;
     generate_pseudolegals_for<KING, ActiveColor>(board, king_targets);
 
-    if constexpr (T == GET_OUT_OF_CHECK) {
-        Bitboard king_attackers = board.enemy_attackers_of(board.get_king_sq(ActiveColor), board.ColorBB[BOTH], ActiveColor);
-
-        if (king_attackers & (king_attackers-1)) return; // double check cannot be resolved by any moves save the king's
-    }
+    //////////////////////
+    Bitboard king_attackers = board.enemy_attackers_of(board.get_king_sq(ActiveColor), board.ColorBB[BOTH], ActiveColor);
+    if (more_than_one(king_attackers)) return; // double check cannot be resolved by any moves save the king's
+    /////////////////////
 
     if constexpr (T != CAPTURE && T != GET_OUT_OF_CHECK) generate_castling<ActiveColor>(board);
 

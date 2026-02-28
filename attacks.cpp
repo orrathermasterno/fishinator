@@ -143,6 +143,8 @@ Bitboard Attacks::pawn_attacks[BOTH][SQ_AMOUNT];
 Attacks::Magic Attacks::RookMagics[SQ_AMOUNT];
 Attacks::Magic Attacks::BishopMagics[SQ_AMOUNT];
 
+Bitboard Attacks::betweeen_sq[SQ_AMOUNT][SQ_AMOUNT]; 
+
 Bitboard Attacks::generate_sliding_attacks(SliderPiece piece, int sq, Bitboard blockers) {
     Bitboard  attacks             = 0;
     Direction RookDirections[4]   = {NORTH, SOUTH, EAST, WEST};
@@ -228,6 +230,22 @@ template void Attacks::generate_magics<Xorshift, SIZE_FOR_ROOK>(
     Magic (&)[SQ_AMOUNT]
 );
 
+void Attacks::init_between_bb() {
+    int sq1, sq2;
+    for(sq1 = a1; sq1<=h8; sq1++) {
+        for(sq2 = a1; sq2<=h8; sq2++) {
+            if(get_bishop_attack(0ULL, sq1) & set_bit(0ULL, sq2)) {
+                betweeen_sq[sq1][sq2] = get_bishop_attack(set_bit(0ULL, sq1), sq2) 
+                    & get_bishop_attack(set_bit(0ULL, sq2), sq1); 
+            }
+            else if(get_rook_attack(0ULL, sq1) & set_bit(0ULL, sq2)) {
+                betweeen_sq[sq1][sq2] = get_rook_attack(set_bit(0ULL, sq1), sq2) 
+                    & get_rook_attack(set_bit(0ULL, sq2), sq1); 
+            }
+        }
+    } 
+}
+
 void Attacks::init() {
     for (size_t sq = a1; sq<=h8; sq++) {
         generate_magics<Xorshift, SIZE_FOR_ROOK>(rook, sq, rook_attacks, RookMagics);
@@ -238,4 +256,6 @@ void Attacks::init() {
         pawn_attacks[WHITE][sq] = generate_pawn_attacks<WHITE>(set_bit(0ULL, sq));
         pawn_attacks[BLACK][sq] = generate_pawn_attacks<BLACK>(set_bit(0ULL, sq));  
     }
+
+    init_between_bb();
 }

@@ -192,8 +192,6 @@ void Board::make_move(Move& move, BoardState& new_state) {
     ColoredPiece captured_piece = move.is_ep()? make_colored_piece(Color(ActiveColor^1), PAWN) : Mailbox[to_square];
     bool capture = (captured_piece != NO_PIECE);
 
-    std::cout << "is ep: " << move.is_ep() << "\n";
-
     new_state = *bs;
     new_state.Previous = bs;
     bs = &new_state;
@@ -205,7 +203,7 @@ void Board::make_move(Move& move, BoardState& new_state) {
     // premove routine
     if(!capture) {
         if (move.is_double_push()) { // if move was a double push, additionally update EnPassant state
-            Direction push = ActiveColor == WHITE ? NORTH : SOUTH;
+            int push = pawn_push_direction(ActiveColor);
             new_state.EnPassant = to_square - push;
         }
 
@@ -215,7 +213,7 @@ void Board::make_move(Move& move, BoardState& new_state) {
     }
     else { // capture
         if(move.is_ep()) {
-            Direction push = ActiveColor == WHITE ? NORTH : SOUTH;
+            int push =  pawn_push_direction(ActiveColor);
             set_piece<REMOVE_PIECE>(captured_piece, to_square-push);
         }
         else set_piece<REMOVE_PIECE>(captured_piece, to_square);
@@ -263,6 +261,70 @@ void Board::unmake_move(Move& move) {
     }
 
     bs = bs->Previous;
+}
+
+// ugly for now :"(
+bool Board::legal(Move& move) { 
+    int from_sq = move.getFrom();
+    int to_sq = move.getTo();
+
+    // en passant requires special horizontal pin test of both involved pawns, which disappear from the same rank 
+    if (move.is_ep()) {
+        int ksq   = get_king_sq(ActiveColor);
+        int capsq = to_sq - pawn_push_direction(ActiveColor);
+        
+        Bitboard occupied = (ColorBB[BOTH] ^ set_bit(0ULL, from_sq) ^ set_bit(0ULL, capsq)) | set_bit(0ULL, to_sq);
+
+        return !(Attacks::get_rook_attack(occupied, ksq) & get_colored_joint_piece_bb(Color(ActiveColor^1), QUEEN, ROOK))
+            && !(Attacks::get_bishop_attack(occupied, ksq) & get_colored_joint_piece_bb(Color(ActiveColor^1), QUEEN, BISHOP));
+    }
+
+    // king shall not step onto attacked sqs
+    if(type_of(Mailbox[from_sq]) == KING) {
+        if (move.is_castle()) { 
+            if (king_in_check()) return false;
+            
+            return castling_path_is_safe(from_sq, get_castling_rook_sq(move.is_king_castle()), move.is_king_castle());
+        }
+        else {
+            Bitboard occ_without_king = ColorBB[BOTH] ^ set_bit(0ULL, from_sq);
+            if(is_attacked(to_sq, occ_without_king, Color(ActiveColor^1))) return false;
+            else return true;
+        }
+    }
+    
+    // non-king evasions. ideally must be dealt with by movegen flag (TODO)
+    else if (king_in_check()) { 
+        Bitboard attackers = enemy_attackers_of(get_king_sq(ActiveColor), ColorBB[BOTH], ActiveColor);
+        int king_sq = get_king_sq(ActiveColor);
+
+        if(attackers & set_bit(0ULL, to_sq)) {
+            int pinner = is_pinned_by(from_sq);
+            if (pinner != ILLEGAL_SQ) {
+                if (!((Attacks::get_between_sq_bb(pinner, king_sq) | set_bit(0ULL, pinner)) & set_bit(0ULL, to_sq))) return false;
+            }
+            return true;
+        }
+        else {
+            int attacker_sq = pop_lsb(attackers); // double check handled in movegen
+            
+            if(Attacks::get_between_sq_bb(attacker_sq, king_sq) & set_bit(0ULL, to_sq)) {
+                int pinner = is_pinned_by(from_sq);
+                if (pinner != ILLEGAL_SQ) {
+                    if (!((Attacks::get_between_sq_bb(pinner, king_sq) | set_bit(0ULL, pinner)) & set_bit(0ULL, to_sq))) return false;
+                }
+                return true;
+            }
+            return false; // neither capturing nor blocking
+        }
+    }
+
+    // the moving piece is not absolutely pinned on its move direction
+    int pinner = is_pinned_by(from_sq);
+    if (pinner != ILLEGAL_SQ && !((Attacks::get_between_sq_bb(pinner, get_king_sq(ActiveColor)) | set_bit(0ULL, pinner)) 
+        & set_bit(0ULL, to_sq))) return false;
+
+    return true;
 }
 
 
