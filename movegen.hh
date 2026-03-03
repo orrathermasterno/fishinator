@@ -1,6 +1,7 @@
 #pragma once
 
 #include "board.hh"
+#include "move.hh"
 
 constexpr int MAX_MOVES = 256;
 
@@ -16,6 +17,9 @@ public:
     MoveList() {
         last = &Moves[0]; 
     }
+
+    const Move* begin() const { return Moves; }
+    const Move* end() const { return last; }
 
     void print_movelist() const;
 
@@ -33,4 +37,7 @@ public:
 
     template<MoveType T, Color ActiveColor>
     void generate_pseudolegals(const Board& board);
+
 };
+
+uint64_t Perft(Board& board, int depth);

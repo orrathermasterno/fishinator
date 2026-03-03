@@ -5,8 +5,6 @@
 #include <string>
 #include "attacks.hh"
 
-constexpr std::string_view EncodedPieces("PNBRQKxxpnbrqk");
-
 void Board::clear() {
     ActiveColor = WHITE;
     Ply = 0;

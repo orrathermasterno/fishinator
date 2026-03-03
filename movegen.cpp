@@ -193,7 +193,58 @@ void MoveList::generate_pseudolegals(const Board& board) {
     generate_pseudolegals_for<QUEEN, ActiveColor>(board, targets);
 }
 
-// explicit instantiations
+/**********************************\
+==================================
+
+                perft
+
+==================================
+\**********************************/
+
+uint64_t Perft(Board& board, int depth)
+{
+  if (depth == 0) {
+    return 1ULL;
+  }
+
+  MoveList ml = MoveList();
+  uint64_t nodes = 0;
+
+  int us = board.ActiveColor;   
+  int them = us ^ 1;               
+
+  if (us == WHITE) {
+    ml.generate_pseudolegals<QUIET_AND_CAPTURE, WHITE>(board);
+  } else {
+    ml.generate_pseudolegals<QUIET_AND_CAPTURE, BLACK>(board);
+  }
+
+for (const Move* ptr = ml.Moves; ptr < ml.last; ++ptr) {
+    Move current_move = *ptr;
+
+    if (!board.legal(current_move)) {
+        continue; 
+    }
+
+    BoardState state = BoardState(); 
+    board.make_move(current_move, state);
+    
+    nodes += Perft(board, depth - 1);
+    
+    board.unmake_move(current_move);
+  }
+  
+  return nodes;
+}
+
+/**********************************\
+==================================
+
+        explicit instantiations
+
+==================================
+\**********************************/
+
 template void MoveList::add_pawn_moves<QUIET_F>(Bitboard, Direction);
 template void MoveList::add_pawn_moves<KNIGHT_PROM_F>(Bitboard, Direction);
 template void MoveList::add_pawn_moves<BISHOP_PROM_F>(Bitboard, Direction);

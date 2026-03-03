@@ -5,6 +5,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cassert>
+#include "move.hh"
 
 enum SetPieceSwitch {
     ADD_PIECE, REMOVE_PIECE
