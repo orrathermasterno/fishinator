@@ -40,4 +40,5 @@ public:
 
 };
 
+template<bool isRoot>
 uint64_t Perft(Board& board, int depth);

@@ -14,20 +14,6 @@ string UCI::to_lower(std::string str) {
     return str;
 }
 
-string UCI::move_to_str(Move move) {
-    std::string result = std::string(square_to_string[move.getFrom()]) + 
-                     square_to_string[move.getTo()];
-    
-    if (move.is_promotion()) {
-        int piece_type = type_of(move.get_promotion_type(board.ActiveColor));
-        piece_type += 8;
-
-        result += EncodedPieces[piece_type];
-    }
-
-    return result;
-}
-
 Move UCI::parse_move(Board& board, std::string move) {
     move = to_lower(move);
 
@@ -40,7 +26,7 @@ Move UCI::parse_move(Board& board, std::string move) {
     }
 
     for (const auto& m : ml)
-        if (move == move_to_str(m))
+        if (move == m.move_to_str(board.ActiveColor))
             return m;
 
     return Move::empty_move();
@@ -120,8 +106,19 @@ void UCI::loop() {
         else if (command == "isready")
             cout << "readyok" << endl;
 
-        else if (command == "go")
-            cout << "bestmove e2e4" << endl;
+        else if (command == "go") {
+            is >> skipws >> command;
+            if (command == "perft") {
+                int depth = 4;
+                is >> skipws >> depth;
+
+                uint64_t perft = Perft<true>(board, depth);
+                cout << "total nodes: " << perft << endl;
+
+            }
+            else 
+                cout << "bestmove e2e4" << endl;
+        }
 
     } while (command != "quit");
 }

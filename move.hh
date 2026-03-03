@@ -43,11 +43,27 @@ public:
 
     constexpr bool is_promotion() const { return getFlags() & 8; }
 
-    constexpr ColoredPiece get_promotion_type(Color ActiveColor) const {
+    constexpr ColoredPiece get_promotion_type(int ActiveColor) const {
         Piece pt = Piece((getFlags() & 3) + KNIGHT);
         
-        return make_colored_piece(ActiveColor, pt);
+        return make_colored_piece(Color(ActiveColor), pt);
     }
+
+    inline std::string move_to_str(int ActiveColor) const {
+        std::string result = std::string(square_to_string[getFrom()]) + 
+                        square_to_string[getTo()];
+        
+        if (is_promotion()) {
+            int piece_type = type_of(get_promotion_type(ActiveColor));
+            piece_type += 8;
+
+            result += EncodedPieces[piece_type];
+        }
+
+        return result;
+    }
+
+   
 };
 
 constexpr uint8_t CastlingMasks[SQ_AMOUNT] = {

@@ -201,6 +201,7 @@ void MoveList::generate_pseudolegals(const Board& board) {
 ==================================
 \**********************************/
 
+template<bool isRoot>
 uint64_t Perft(Board& board, int depth)
 {
   if (depth == 0) {
@@ -208,7 +209,7 @@ uint64_t Perft(Board& board, int depth)
   }
 
   MoveList ml = MoveList();
-  uint64_t nodes = 0;
+  uint64_t nodes = 0, count = 0;
 
   int us = board.ActiveColor;   
   int them = us ^ 1;               
@@ -229,7 +230,10 @@ for (const Move* ptr = ml.Moves; ptr < ml.last; ++ptr) {
     BoardState state = BoardState(); 
     board.make_move(current_move, state);
     
-    nodes += Perft(board, depth - 1);
+    count = Perft<false>(board, depth - 1);
+    nodes += count;
+
+    if(isRoot) std::cout << current_move.move_to_str(us) << ": " << count << std::endl;
     
     board.unmake_move(current_move);
   }
@@ -289,3 +293,6 @@ INSTANTIATE_MOVE_TYPES(QUEEN,  const Board&, Bitboard, Color)
 INSTANTIATE_MOVE_TYPES(KING,  const Board&, Bitboard, Color)
 
 #undef INSTANTIATE_MOVE_TYPES
+
+template uint64_t Perft<true>(Board&, int);
+template uint64_t Perft<false>(Board&, int);
