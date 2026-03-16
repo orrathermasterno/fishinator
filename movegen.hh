@@ -38,6 +38,12 @@ public:
     template<MoveType T, Color ActiveColor>
     void generate_pseudolegals(const Board& board);
 
+    template<MoveType T>
+    void generate_pseudolegals(const Board& board);
+
+    // generate_pseudolegals wrapper with legality check
+    void generate_legals(const Board& board);
+
 };
 
 template<bool isRoot>

@@ -1,4 +1,5 @@
 #include "uci.hh"
+#include "search.hh"
 
 /**********************************\
 ==================================
@@ -116,8 +117,10 @@ void UCI::loop() {
                 cout << "total nodes: " << perft << endl;
 
             }
-            else 
-                cout << "bestmove e2e4" << endl;
+            else {
+                Move bestmove = Searcher::root_alphabeta(board);
+                cout << "bestmove " << bestmove.move_to_str(board.ActiveColor) << endl;
+            }
         }
 
     } while (command != "quit");

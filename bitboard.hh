@@ -3,15 +3,19 @@
 #include <cstdint>
 #include <cmath>
 #include <string_view>
+#include <cassert>
+
+#define C64(constant)  ((uint64_t)constant)
 
 typedef uint64_t Bitboard;
 inline constexpr uint64_t ONE = 1;
-#define C64(constant)  ((uint64_t)constant)
 constexpr size_t SQ_AMOUNT = 64;
 
 enum Color {
   WHITE, BLACK, BOTH = 2, COLOR_NB
 };
+
+// constexpr Color operator~(Color c) { return Color(c ^ 1); }
 
 enum Piece: std::uint8_t {
     PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING,
@@ -137,7 +141,7 @@ constexpr int population_count(Bitboard bb) {
 // compiler intrinsic
 // simplest loop implementation: use (bitboard & -bitboard) - 1 with population_count
 constexpr int bit_scan_forward(Bitboard bb) {
-    if (!bb) return ILLEGAL_SQ; // __builtin_ctzll is undefined at 0
+    assert(bb != 0); // __builtin_ctzll is undefined at 0
     return __builtin_ctzll(bb);
 }
 // bit_scan_forward wrapper that additionally pops the lsb
@@ -149,12 +153,13 @@ constexpr int pop_lsb(Bitboard& b) {
 
 constexpr Rank get_rank(int sq) { return Rank(sq >> 3); }
 constexpr File get_file(int sq) { return File(sq & 7); }
+constexpr int flip(int sq) { return sq^56; }
+
 constexpr Bitboard get_rank_bb(Rank r) { return Rank1_const << (8 * r); }
 constexpr Bitboard get_file_bb(File f) { return FileA_const << f; }
 
 constexpr bool more_than_one(Bitboard bb) {
-  pop_lsb(bb);
-  return bb;
+  return (bb & (bb - 1)) != 0;
 }
 
 constexpr int sign_mask(int num) { return num >> 31; } // -1 if num<0, else 0

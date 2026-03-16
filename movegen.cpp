@@ -193,6 +193,16 @@ void MoveList::generate_pseudolegals(const Board& board) {
     generate_pseudolegals_for<QUEEN, ActiveColor>(board, targets);
 }
 
+template<MoveType T>
+void MoveList::generate_pseudolegals(const Board& board) {
+    if (board.ActiveColor == WHITE) generate_pseudolegals<T, WHITE>(board);
+    else generate_pseudolegals<T, BLACK>(board);
+}
+
+void generate_legals(const Board& board) {
+
+}
+
 /**********************************\
 ==================================
 
@@ -281,6 +291,11 @@ INSTANTIATE_PAWN_PSEUDOLEGALS(WHITE)
 INSTANTIATE_PAWN_PSEUDOLEGALS(BLACK)
 
 #undef INSTANTIATE_PAWN_PSEUDOLEGALS
+
+template void MoveList::generate_pseudolegals<QUIET>(const Board&);
+template void MoveList::generate_pseudolegals<CAPTURE>(const Board&);
+template void MoveList::generate_pseudolegals<QUIET_AND_CAPTURE>(const Board&);
+template void MoveList::generate_pseudolegals<GET_OUT_OF_CHECK>(const Board&);
 
 #define INSTANTIATE_MOVE_TYPES(PIECE, BOARD, BB, COLOR) \
     template void MoveList::generate_pseudolegals_for<PIECE, WHITE>(BOARD, BB); \

@@ -125,7 +125,7 @@ public:
         return false;
     }
 
-    inline int get_king_sq(Color color) const { // maybe store king sq as state array idk
+    inline int get_king_sq(Color color) const { 
         return bit_scan_forward(PieceBB[KING] & ColorBB[color]);
     }
 

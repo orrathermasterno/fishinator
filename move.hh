@@ -1,5 +1,6 @@
 #pragma once
 #include "bitboard.hh"
+#include <string>
 
 enum MoveFlag: uint8_t {
     QUIET_F, DOUBLE_PAWN_PUSH_F, KING_CASTLE_F, QUEEN_CASTLE_F, CAPTURES_F, EP_CAPTURE_F, // CAPTURES_F is only set for pawns

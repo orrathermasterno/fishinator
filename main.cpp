@@ -8,6 +8,8 @@
 #include "movegen.hh"
 #include <sys/time.h>
 #include "uci.hh"
+#include "evaluation.hh"
+#include "search.hh"
 
 
 int get_time_ms()
@@ -19,5 +21,12 @@ int get_time_ms()
 
 int main() {
   Attacks::init();
+  Evaluator::init();
+
+  // Board board = Board{};
+  // board.parse_FEN(START_FEN);
+
+  // Move bestmove = Searcher::root_alphabeta(board);
+  // cout << square_to_string[bestmove.getFrom()] << square_to_string[bestmove.getTo()];
   UCI::loop();
 }

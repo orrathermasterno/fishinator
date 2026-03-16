@@ -1,11 +1,19 @@
 # fishinator
 ## Features 
 **Board representation**
-* [Bitboards](https://www.chessprogramming.org/Bitboards) [[Little-Endian Rank-File Mapping](https://www.chessprogramming.org/Square_Mapping_Considerations#LittleEndianRankFileMapping)]
-* [Magic Bitboards](https://www.chessprogramming.org/Magic_Bitboards) [[Plain](https://www.chessprogramming.org/Magic_Bitboards#Plain)]
+* [Bitboards](https://www.chessprogramming.org/Bitboards) ([Little-Endian Rank-File Mapping](https://www.chessprogramming.org/Square_Mapping_Considerations#LittleEndianRankFileMapping))
+* [Magic Bitboards](https://www.chessprogramming.org/Magic_Bitboards) ([Plain](https://www.chessprogramming.org/Magic_Bitboards#Plain))
 
 **Communication protocol**
 * [UCI](https://en.wikipedia.org/wiki/Universal_Chess_Interface)
+
+**Search**
+* [Alpha-Beta](https://www.chessprogramming.org/Alpha-Beta)
+* [TODO] [Quiescence](https://www.chessprogramming.org/Quiescence_Search)
+* [TODO] [Move Ordering](https://www.chessprogramming.org/Move_Ordering)
+
+**Evaluation**
+* [testing purposes] [PeSTO's Evaluation Function](https://www.chessprogramming.org/PeSTO%27s_Evaluation_Function)
 
 ## How to
 ### Compile and run
@@ -17,7 +25,7 @@ make && ./fishinator
 [More about Perft](https://www.chessprogramming.org/Perft).
 
 ```bash
-position [fen <fenstring> | startpos ] moves <move1> .... <movei>
+position [fen <fenstring> | startpos] moves <move1> .... <movei>
 go perft <depth>
 ```
 
