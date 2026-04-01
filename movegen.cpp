@@ -162,6 +162,7 @@ void MoveList::generate_castling(const Board& board) {
 template<MoveType T, Color ActiveColor>
 void MoveList::generate_pseudolegals(const Board& board) {
     Bitboard targets;
+    Bitboard king_attackers = board.get_checkers(ActiveColor, board.ColorBB[BOTH]);
 
     if constexpr (T == QUIET) {
         targets = ~board.ColorBB[BOTH];
@@ -173,14 +174,16 @@ void MoveList::generate_pseudolegals(const Board& board) {
         targets = ~board.ColorBB[ActiveColor];
     } 
     else if constexpr (T == GET_OUT_OF_CHECK) {
-        targets = 0ULL; // todo !!!!!!
+        int attacker_sq = bit_scan_forward(king_attackers); 
+        
+        targets = Attacks::get_between_sq_bb(board.get_king_sq(ActiveColor), attacker_sq) 
+                | set_bit(0ULL, attacker_sq); 
     }
                     ;
     Bitboard king_targets = (T == GET_OUT_OF_CHECK) ? ~board.ColorBB[ActiveColor] : targets;
     generate_pseudolegals_for<KING, ActiveColor>(board, king_targets);
 
     //////////////////////
-    Bitboard king_attackers = board.enemy_attackers_of(board.get_king_sq(ActiveColor), board.ColorBB[BOTH], ActiveColor);
     if (more_than_one(king_attackers)) return; // double check cannot be resolved by any moves save the king's
     /////////////////////
 
@@ -199,8 +202,27 @@ void MoveList::generate_pseudolegals(const Board& board) {
     else generate_pseudolegals<T, BLACK>(board);
 }
 
-void generate_legals(const Board& board) {
+void MoveList::generate_all_legals(const Board& board) {
+    Color side = board.ActiveColor;
+    int king_sq = board.get_king_sq(side);
 
+    if (board.king_in_check()) generate_pseudolegals<GET_OUT_OF_CHECK>(board); // don't waste time generating extra moves in case of check
+    else generate_pseudolegals<QUIET_AND_CAPTURE>(board);
+
+    Move* cur = Moves;
+
+    while (cur != last) {
+        bool is_pinned = board.is_pinned(cur->getFrom(), side);
+        
+        if ((is_pinned || cur->getFrom() == king_sq || cur->is_ep())  // short-circuit eval
+            && !board.legal(*cur)) {
+
+            *cur = *(--last); 
+        } 
+        else {
+            ++cur;
+        }
+    }
 }
 
 /**********************************\
@@ -224,18 +246,10 @@ uint64_t Perft(Board& board, int depth)
   int us = board.ActiveColor;   
   int them = us ^ 1;               
 
-  if (us == WHITE) {
-    ml.generate_pseudolegals<QUIET_AND_CAPTURE, WHITE>(board);
-  } else {
-    ml.generate_pseudolegals<QUIET_AND_CAPTURE, BLACK>(board);
-  }
+  ml.generate_all_legals(board);
 
 for (const Move* ptr = ml.Moves; ptr < ml.last; ++ptr) {
     Move current_move = *ptr;
-
-    if (!board.legal(current_move)) {
-        continue; 
-    }
 
     BoardState state = BoardState(); 
     board.make_move(current_move, state);

@@ -3,6 +3,7 @@
 #include "board.hh"
 
 constexpr int INFINITY_VAL = 32001;
+constexpr int CHECKMATE_VAL = 30000;
 
 class Evaluator {
 public:

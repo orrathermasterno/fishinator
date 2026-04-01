@@ -15,7 +15,7 @@ enum Color {
   WHITE, BLACK, BOTH = 2, COLOR_NB
 };
 
-// constexpr Color operator~(Color c) { return Color(c ^ 1); }
+constexpr Color operator~(Color c) { return Color(c ^ 1); }
 
 enum Piece: std::uint8_t {
     PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING,

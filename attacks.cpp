@@ -144,6 +144,8 @@ Attacks::Magic Attacks::RookMagics[SQ_AMOUNT];
 Attacks::Magic Attacks::BishopMagics[SQ_AMOUNT];
 
 Bitboard Attacks::betweeen_sq[SQ_AMOUNT][SQ_AMOUNT]; 
+Bitboard Attacks::line_sq[SQ_AMOUNT][SQ_AMOUNT];
+Bitboard Attacks::ray_sq[SQ_AMOUNT][SQ_AMOUNT];
 
 Bitboard Attacks::generate_sliding_attacks(SliderPiece piece, int sq, Bitboard blockers) {
     Bitboard  attacks             = 0;
@@ -237,10 +239,14 @@ void Attacks::init_between_bb() {
             if(get_bishop_attack(0ULL, sq1) & set_bit(0ULL, sq2)) {
                 betweeen_sq[sq1][sq2] = get_bishop_attack(set_bit(0ULL, sq1), sq2) 
                     & get_bishop_attack(set_bit(0ULL, sq2), sq1); 
+                line_sq[sq1][sq2] = (get_bishop_attack(0ULL, sq1) & get_bishop_attack(0ULL, sq2)) | set_bit(0ULL, sq1) | set_bit(0ULL, sq2);
+                ray_sq[sq1][sq2] =  (get_bishop_attack(0ULL, sq1) & get_bishop_attack(set_bit(0ULL, sq1), sq2)) | set_bit(0ULL, sq2);
             }
             else if(get_rook_attack(0ULL, sq1) & set_bit(0ULL, sq2)) {
                 betweeen_sq[sq1][sq2] = get_rook_attack(set_bit(0ULL, sq1), sq2) 
                     & get_rook_attack(set_bit(0ULL, sq2), sq1); 
+                line_sq[sq1][sq2] = (get_rook_attack(0ULL, sq1) & get_rook_attack(0ULL, sq2)) | set_bit(0ULL, sq1) | set_bit(0ULL, sq2);
+                ray_sq[sq1][sq2] =  (get_rook_attack(0ULL, sq1) & get_rook_attack(set_bit(0ULL, sq1), sq2)) | set_bit(0ULL, sq2);
             }
         }
     } 

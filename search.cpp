@@ -1,9 +1,7 @@
 #include "search.hh"
 #include "evaluation.hh"
 
-int DEF_DEPTH = 4;
-
-Move Searcher::root_alphabeta(Board& board) {
+Move Searcher::root_alphabeta(Board& board, int depth) {
     MoveList ml = MoveList();
     Color us = board.ActiveColor;     
     int score;
@@ -12,18 +10,15 @@ Move Searcher::root_alphabeta(Board& board) {
     int beta = INFINITY_VAL;
     int bestValue = -INFINITY_VAL;
 
-    ml.generate_pseudolegals<QUIET_AND_CAPTURE>(board);
+    ml.generate_all_legals(board);
 
     for (const Move* ptr = ml.Moves; ptr < ml.last; ++ptr) {
         Move current_move = *ptr;
-        if (!board.legal(current_move)) {
-            continue; 
-        }
 
         BoardState state = BoardState(); 
         board.make_move(current_move, state);
 
-        score = -alphabeta(board, -beta, -alpha, DEF_DEPTH - 1);
+        score = -alphabeta(board, -beta, -alpha, depth - 1);
 
         board.unmake_move(current_move);
 
@@ -39,7 +34,6 @@ Move Searcher::root_alphabeta(Board& board) {
     return bestmove;
 }
 
-// doesn't deal with zero legal moves cases yet 
 int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
     if(depth_left == 0) return quiescence(board, alpha, beta);
 
@@ -49,14 +43,14 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
     int score;     
     int bestValue = -INFINITY_VAL;       
 
-    ml.generate_pseudolegals<QUIET_AND_CAPTURE>(board);
+    ml.generate_all_legals(board);
+
+    int legals = 0;
 
     for (const Move* ptr = ml.Moves; ptr < ml.last; ++ptr) {
         Move current_move = *ptr;
 
-        if (!board.legal(current_move)) {
-            continue; 
-        }
+        legals++;
 
         BoardState state = BoardState(); 
         board.make_move(current_move, state);
@@ -74,6 +68,16 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
         if(score >= beta)
             return bestValue;   // fail soft beta-cutoff
     }
+
+
+    if (!legals) {
+
+        if (board.king_in_check()) // checkmate
+            return -CHECKMATE_VAL + board.Ply;
+
+        return 0; // stalemate
+    }
+
     return bestValue;
 }
 

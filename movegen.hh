@@ -6,8 +6,10 @@
 constexpr int MAX_MOVES = 256;
 
 enum MoveType: uint8_t {
-    QUIET, CAPTURE, QUIET_AND_CAPTURE,
-    GET_OUT_OF_CHECK // this one is supposed to be useful during quiescence search
+    QUIET, 
+    CAPTURE, 
+    QUIET_AND_CAPTURE,
+    GET_OUT_OF_CHECK 
 };
 
 class MoveList {
@@ -41,8 +43,8 @@ public:
     template<MoveType T>
     void generate_pseudolegals(const Board& board);
 
-    // generate_pseudolegals wrapper with legality check
-    void generate_legals(const Board& board);
+    // generate_pseudolegals wrapper with a legality check
+    void generate_all_legals(const Board& board);
 
 };
 

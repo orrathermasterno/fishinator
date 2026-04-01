@@ -19,12 +19,7 @@ Move UCI::parse_move(Board& board, std::string move) {
     move = to_lower(move);
 
     MoveList ml = MoveList();
-    if (board.ActiveColor == WHITE) {
-        ml.generate_pseudolegals<QUIET_AND_CAPTURE, WHITE>(board);
-    }
-    else {
-        ml.generate_pseudolegals<QUIET_AND_CAPTURE, BLACK>(board);
-    }
+    ml.generate_all_legals(board);
 
     for (const auto& m : ml)
         if (move == m.move_to_str(board.ActiveColor))
@@ -81,7 +76,7 @@ void UCI::parse_position(istringstream& is) {
 }
 
 void UCI::loop() {
-    string line, command;
+    string line, command, command2;
 
     do {
         if (!std::getline(std::cin, line)) {
@@ -101,24 +96,32 @@ void UCI::loop() {
 
         else if (command == "position") {
             parse_position(is);
-            board.print_board_state();
         }
 
         else if (command == "isready")
             cout << "readyok" << endl;
 
         else if (command == "go") {
-            is >> skipws >> command;
-            if (command == "perft") {
-                int depth = 4;
-                is >> skipws >> depth;
+            string token;
+            int depth = DEF_DEPTH;
+            bool is_perft = false;
 
-                uint64_t perft = Perft<true>(board, depth);
-                cout << "total nodes: " << perft << endl;
-
+            while (is >> skipws >> token) {
+                if (token == "depth") {
+                    is >> skipws >> depth;
+                } 
+                else if (token == "perft") {
+                    is_perft = true;
+                    is >> skipws >> depth; 
+                }
             }
+
+            if (is_perft) {
+                uint64_t nodes = Perft<true>(board, depth);
+                cout << "total nodes: " << nodes << endl;
+            } 
             else {
-                Move bestmove = Searcher::root_alphabeta(board);
+                Move bestmove = Searcher::root_alphabeta(board, depth);
                 cout << "bestmove " << bestmove.move_to_str(board.ActiveColor) << endl;
             }
         }

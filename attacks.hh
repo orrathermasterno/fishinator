@@ -47,7 +47,9 @@ class Attacks {
     static Bitboard pawn_attacks[BOTH][SQ_AMOUNT];
 
     // non-attack helper arrays
-    static Bitboard betweeen_sq[SQ_AMOUNT][SQ_AMOUNT]; 
+    static Bitboard betweeen_sq[SQ_AMOUNT][SQ_AMOUNT]; // line segment between sq1 and sq2
+    static Bitboard line_sq[SQ_AMOUNT][SQ_AMOUNT]; // line drawn through sq1 and sq2
+    static Bitboard ray_sq[SQ_AMOUNT][SQ_AMOUNT];
 
 public:
     /**********************************\
@@ -143,6 +145,14 @@ public:
 
     static inline Bitboard get_between_sq_bb(int sq1, int sq2) {
         return betweeen_sq[sq1][sq2];
+    }
+
+    static inline Bitboard get_line_sq_bb(int sq1, int sq2) {
+        return line_sq[sq1][sq2];
+    }
+
+    static inline Bitboard get_ray_sq_bb(int sq1, int sq2) {
+        return ray_sq[sq1][sq2];
     }
 
     /**********************************\

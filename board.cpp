@@ -72,7 +72,8 @@ Bitboard Board::attackers_of(int sq, Bitboard blockers) const {
 
 // like Attacked attacked, not just eyed 
 // color param stands for attacker color
-bool Board::is_attacked(int sq, Bitboard blockers, Color color) {
+// ideally checks should be ordered according to probability of a piece giving check but rn they're sorted based on vibes
+bool Board::is_attacked(int sq, Bitboard blockers, Color color) const {
     return (Attacks::get_rook_attack(blockers, sq) & get_colored_joint_piece_bb(color, ROOK, QUEEN))
         || (Attacks::get_bishop_attack(blockers, sq) & get_colored_joint_piece_bb(color, BISHOP, QUEEN))
         || (Attacks::get_knight_attack(sq) & get_colored_piece_bb<KNIGHT>(color))
@@ -141,6 +142,8 @@ void Board::parse_FEN(const std::string& fen) {
         int rank = enPassant.at(1) - '1';
         bs->EnPassant = Square(rank*8 + file);
     }
+
+    set_state();
 }
 
 template<MoveSwitch sw>
@@ -177,6 +180,68 @@ void Board::castle(bool kingside) {
         if(ActiveColor == WHITE) move_piece<sw>(a1, d1, W_ROOK);
 
         else move_piece<sw>(a8, d8, B_ROOK);
+    }
+}
+
+bool Board::castling_path_is_safe(int king_sq, int rook_sq, bool IsKingside) const {
+    Bitboard in_between = Attacks::get_between_sq_bb(king_sq, rook_sq);
+
+    if(!IsKingside) {
+        pop_lsb(in_between);
+    } 
+
+    int btw_sq;
+    while (in_between) {
+        btw_sq = pop_lsb(in_between);
+        
+        if(is_attacked(btw_sq, ColorBB[BOTH], Color(ActiveColor^1))) {
+            return false; 
+        }
+    }
+
+    return true; 
+}
+
+int Board::is_pinned_by_old(int sq) { 
+    int king_sq = get_king_sq(ActiveColor);
+
+    Bitboard slider_attackers = enemy_attackers_of(king_sq, ColorBB[~ActiveColor], ActiveColor)
+                                & get_colored_joint_piece_bb(Color(~ActiveColor), ROOK, QUEEN, BISHOP);
+    int attacker_sq;
+    Bitboard pinned_bb = set_bit(0ULL, sq);
+    Bitboard path;
+
+    while(slider_attackers) {
+        attacker_sq = pop_lsb(slider_attackers);
+        path = Attacks::get_between_sq_bb(king_sq, attacker_sq);
+
+        if((path & pinned_bb) && !more_than_one(path & ColorBB[ActiveColor])) 
+            return attacker_sq;
+    }
+
+    return ILLEGAL_SQ;
+}
+
+void Board::set_pinners_and_blockers(Color ColorToUpdate) {
+    bs->pinners[~ColorToUpdate] = 0ULL;
+    bs->blockers[ColorToUpdate] = 0ULL;
+
+    int king_sq = get_king_sq(ColorToUpdate);
+
+    Bitboard slider_attackers = enemy_attackers_of(king_sq, ColorBB[~ColorToUpdate], ColorToUpdate)
+                                & get_colored_joint_piece_bb(Color(~ColorToUpdate), ROOK, QUEEN, BISHOP);
+
+    int attacker_sq; Bitboard path, blockers;
+
+    while(slider_attackers) {
+        attacker_sq = pop_lsb(slider_attackers);
+        path = Attacks::get_between_sq_bb(king_sq, attacker_sq);
+        blockers = path & ColorBB[ColorToUpdate];
+
+        if (population_count(blockers) == 1) {
+            bs->pinners[~ColorToUpdate] |= set_bit(0ULL, attacker_sq); 
+            bs->blockers[ColorToUpdate]|= blockers;
+        }
     }
 }
 
@@ -224,6 +289,8 @@ void Board::make_move(Move& move, BoardState& new_state) {
         make_promotion<FORWARD>(from_square, to_square, prom_to);
     }
 
+    set_state();
+
     ActiveColor = Color(ActiveColor ^ 1);
     Ply++;
 }
@@ -262,19 +329,21 @@ void Board::unmake_move(Move& move) {
 }
 
 // ugly for now :"(
-bool Board::legal(Move& move) { 
+bool Board::legal(Move& move) const { 
     int from_sq = move.getFrom();
     int to_sq = move.getTo();
+    int king_sq = get_king_sq(ActiveColor);
+
+    Bitboard to_sq_bb = set_bit(0ULL, to_sq);
 
     // en passant requires special horizontal pin test of both involved pawns, which disappear from the same rank 
     if (move.is_ep()) {
-        int ksq   = get_king_sq(ActiveColor);
         int capsq = to_sq - pawn_push_direction(ActiveColor);
         
-        Bitboard occupied = (ColorBB[BOTH] ^ set_bit(0ULL, from_sq) ^ set_bit(0ULL, capsq)) | set_bit(0ULL, to_sq);
+        Bitboard occupied = (ColorBB[BOTH] ^ set_bit(0ULL, from_sq) ^ set_bit(0ULL, capsq)) | to_sq_bb;
 
-        return !(Attacks::get_rook_attack(occupied, ksq) & get_colored_joint_piece_bb(Color(ActiveColor^1), QUEEN, ROOK))
-            && !(Attacks::get_bishop_attack(occupied, ksq) & get_colored_joint_piece_bb(Color(ActiveColor^1), QUEEN, BISHOP));
+        return !(Attacks::get_rook_attack(occupied, king_sq) & get_colored_joint_piece_bb(Color(ActiveColor^1), QUEEN, ROOK))
+            && !(Attacks::get_bishop_attack(occupied, king_sq) & get_colored_joint_piece_bb(Color(ActiveColor^1), QUEEN, BISHOP));
     }
 
     // king shall not step onto attacked sqs
@@ -290,37 +359,24 @@ bool Board::legal(Move& move) {
             else return true;
         }
     }
-    
-    // non-king evasions. ideally must be dealt with by movegen flag (TODO)
-    else if (king_in_check()) { 
-        Bitboard attackers = enemy_attackers_of(get_king_sq(ActiveColor), ColorBB[BOTH], ActiveColor);
-        int king_sq = get_king_sq(ActiveColor);
-
-        if(attackers & set_bit(0ULL, to_sq)) {
-            int pinner = is_pinned_by(from_sq);
-            if (pinner != ILLEGAL_SQ) {
-                if (!((Attacks::get_between_sq_bb(pinner, king_sq) | set_bit(0ULL, pinner)) & set_bit(0ULL, to_sq))) return false;
-            }
-            return true;
-        }
-        else {
-            int attacker_sq = pop_lsb(attackers); // double check handled in movegen
-            
-            if(Attacks::get_between_sq_bb(attacker_sq, king_sq) & set_bit(0ULL, to_sq)) {
-                int pinner = is_pinned_by(from_sq);
-                if (pinner != ILLEGAL_SQ) {
-                    if (!((Attacks::get_between_sq_bb(pinner, king_sq) | set_bit(0ULL, pinner)) & set_bit(0ULL, to_sq))) return false;
-                }
-                return true;
-            }
-            return false; // neither capturing nor blocking
-        }
-    }
 
     // the moving piece is not absolutely pinned on its move direction
-    int pinner = is_pinned_by(from_sq);
-    if (pinner != ILLEGAL_SQ && !((Attacks::get_between_sq_bb(pinner, get_king_sq(ActiveColor)) | set_bit(0ULL, pinner)) 
-        & set_bit(0ULL, to_sq))) return false;
+    if (is_pinned(from_sq, ActiveColor) && !(Attacks::get_ray_sq_bb(king_sq, from_sq) & to_sq_bb)) return false;
+    
+    // non-king evasions
+    // // double check handled by movegen
+    else if (king_in_check()) { 
+        Bitboard attackers = enemy_attackers_of(king_sq, ColorBB[BOTH], ActiveColor);
+
+        // capture checker?
+        if (attackers & to_sq_bb) return true;
+        
+        // block checker?
+        int attacker_sq = pop_lsb(attackers); 
+        if (Attacks::get_between_sq_bb(attacker_sq, king_sq) & to_sq_bb) return true;
+        
+        return false; // neither
+    }
 
     return true;
 }

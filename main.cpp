@@ -23,10 +23,8 @@ int main() {
   Attacks::init();
   Evaluator::init();
 
-  // Board board = Board{};
-  // board.parse_FEN(START_FEN);
+  // // Board board = Board{};
+  // // board.parse_FEN("8/8/8/8/8/8/7k/QQQQQQQQ b - - 0 1");
 
-  // Move bestmove = Searcher::root_alphabeta(board);
-  // cout << square_to_string[bestmove.getFrom()] << square_to_string[bestmove.getTo()];
   UCI::loop();
 }

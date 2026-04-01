@@ -22,6 +22,9 @@ struct BoardState {
     ColoredPiece CapturedPiece;
     BoardState* Previous; 
 
+    Bitboard pinners[2]; // pinners[BLACK] represents black pieces pinning some white pieces
+    Bitboard blockers[2]; // blockers[BLACK] represents black pieces being pinned by some white pieces
+
     BoardState() {
         EnPassant = ILLEGAL_SQ;
         Castling = NO_CASTLING;
@@ -106,7 +109,12 @@ public:
     inline Bitboard enemy_attackers_of(int sq, Bitboard blockers, Color Color) const {
         return attackers_of(sq, blockers) & ColorBB[Color ^ 1];
     }
-    bool is_attacked(int sq, Bitboard blockers, Color color);
+
+    inline Bitboard get_checkers(Color KingColor, Bitboard blockers) const {
+        return enemy_attackers_of(get_king_sq(KingColor), blockers, KingColor);
+    }
+
+    bool is_attacked(int sq, Bitboard blockers, Color color) const;
 
     template<CastlingRights Cr>
     inline bool can_castle() const {
@@ -145,56 +153,34 @@ public:
         return bs->CapturedPiece;
     }
 
-    inline int get_castling_rook_sq(bool IsKingside) {
+    inline int get_castling_rook_sq(bool IsKingside) const {
         if (IsKingside) {
             return ActiveColor==WHITE? h1 : h8;
         }
         return ActiveColor==WHITE? a1 : a8;
     }
 
-    inline int is_pinned_by(int sq) { 
-        int king_sq = get_king_sq(ActiveColor);
-        Bitboard king_attackers = enemy_attackers_of(king_sq, ColorBB[ActiveColor^1], ActiveColor);
-        Bitboard slider_attackers = king_attackers & get_colored_joint_piece_bb(Color(ActiveColor^1), ROOK, QUEEN, BISHOP);
-        int attacker_sq;
-        Bitboard pinned_bb = set_bit(0ULL, sq);
-        Bitboard path;
+    int is_pinned_by_old(int sq);
 
-        while(slider_attackers) {
-            attacker_sq = pop_lsb(slider_attackers);
-            path = Attacks::get_between_sq_bb(king_sq, attacker_sq);
-
-            if((path & pinned_bb) && !more_than_one(path & ColorBB[ActiveColor])) 
-                return attacker_sq;
-        }
-
-        return ILLEGAL_SQ;
+    inline bool is_pinned(int sq, Color side) const {
+        return bs->blockers[side] & set_bit(0ULL, sq);
     }
 
-    inline bool castling_path_is_safe(int king_sq, int rook_sq, bool IsKingside) {
-        Bitboard in_between = Attacks::get_between_sq_bb(king_sq, rook_sq);
+    void set_pinners_and_blockers(Color ColorToUpdate);
 
-        if(!IsKingside) {
-            pop_lsb(in_between);
-        } 
-
-        int btw_sq;
-        while (in_between) {
-            btw_sq = pop_lsb(in_between);
-            
-            if(is_attacked(btw_sq, ColorBB[BOTH], Color(ActiveColor^1))) {
-                return false; 
-            }
-        }
-
-        return true; 
+    inline void set_state() {
+        // update pinners and blockers for both sides
+        set_pinners_and_blockers(WHITE);
+        set_pinners_and_blockers(BLACK);
     }
 
-    inline bool king_in_check() {
+    bool castling_path_is_safe(int king_sq, int rook_sq, bool IsKingside) const;
+
+    inline bool king_in_check() const {
         return is_attacked(get_king_sq(ActiveColor), ColorBB[BOTH], Color(ActiveColor^1));
     }
 
-    inline int pawn_push_direction(Color c) {
+    inline int pawn_push_direction(Color c) const {
         return c == WHITE ? NORTH : SOUTH;
     }
 
@@ -210,5 +196,5 @@ public:
     void make_move(Move& move, BoardState& new_state);
     void unmake_move(Move& move);
 
-    bool legal(Move& move);
+    bool legal(Move& move) const;
 };
