@@ -11,14 +11,6 @@
 #include "evaluation.hh"
 #include "search.hh"
 
-
-int get_time_ms()
-{
-  struct timeval time_value;
-  gettimeofday(&time_value, NULL);
-  return time_value.tv_sec * 1000 + time_value.tv_usec / 1000;
-}
-
 int main() {
   Attacks::init();
   Evaluator::init();

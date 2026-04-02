@@ -222,9 +222,10 @@ int Board::is_pinned_by_old(int sq) {
     return ILLEGAL_SQ;
 }
 
-void Board::set_pinners_and_blockers(Color ColorToUpdate) {
+void Board::set_pinners_and_blockers(Color ColorToUpdate) const {
     bs->pinners[~ColorToUpdate] = 0ULL;
     bs->blockers[ColorToUpdate] = 0ULL;
+    bs->pins_calculated[ColorToUpdate] = true;
 
     int king_sq = get_king_sq(ColorToUpdate);
 
@@ -262,6 +263,7 @@ void Board::make_move(Move& move, BoardState& new_state) {
     new_state.Castling = CastlingRights(uint8_t(new_state.Castling) & CastlingMasks[from_square] & CastlingMasks[to_square]);
     new_state.CapturedPiece = captured_piece;
     new_state.EnPassant = ILLEGAL_SQ;
+    new_state.pins_calculated[WHITE]=false; new_state.pins_calculated[BLACK]=false;
 
     // premove routine
     if(!capture) {
@@ -289,7 +291,7 @@ void Board::make_move(Move& move, BoardState& new_state) {
         make_promotion<FORWARD>(from_square, to_square, prom_to);
     }
 
-    set_state();
+    // set_state();
 
     ActiveColor = Color(ActiveColor ^ 1);
     Ply++;

@@ -1,6 +1,8 @@
 #include "movegen.hh"
 #include "attacks.hh"
 
+#include <sys/time.h>
+
 constexpr int WHITE_KING_STARTING_SQ = e1;
 constexpr int BLACK_KING_STARTING_SQ = e8;
 
@@ -233,36 +235,67 @@ void MoveList::generate_all_legals(const Board& board) {
 ==================================
 \**********************************/
 
+int get_time_ms()
+{
+  struct timeval time_value;
+  gettimeofday(&time_value, NULL);
+  return time_value.tv_sec * 1000 + time_value.tv_usec / 1000;
+}
+
 template<bool isRoot>
 uint64_t Perft(Board& board, int depth)
 {
-  if (depth == 0) {
+    if (depth == 0) {
     return 1ULL;
-  }
+    }
 
-  MoveList ml = MoveList();
-  uint64_t nodes = 0, count = 0;
+    MoveList ml = MoveList();
+    uint64_t nodes = 0, count = 0;
 
-  int us = board.ActiveColor;   
-  int them = us ^ 1;               
+    int us = board.ActiveColor;   
+    int them = us ^ 1;    
 
-  ml.generate_all_legals(board);
+#ifdef BENCH
+    int start_time = 0;
+    if (isRoot) {
+        start_time = get_time_ms();
+    }
+#endif
 
-for (const Move* ptr = ml.Moves; ptr < ml.last; ++ptr) {
-    Move current_move = *ptr;
+    ml.generate_all_legals(board);
 
-    BoardState state = BoardState(); 
-    board.make_move(current_move, state);
-    
-    count = Perft<false>(board, depth - 1);
-    nodes += count;
+    for (const Move* ptr = ml.Moves; ptr < ml.last; ++ptr) {
+        Move current_move = *ptr;
 
-    if(isRoot) std::cout << current_move.move_to_str(us) << ": " << count << std::endl;
-    
-    board.unmake_move(current_move);
-  }
+        BoardState state = BoardState(); 
+        board.make_move(current_move, state);
+        
+        count = Perft<false>(board, depth - 1);
+        nodes += count;
+
+    #ifndef BENCH
+        if(isRoot) std::cout << current_move.move_to_str(us) << ": " << count << std::endl;
+    #endif
+        
+        board.unmake_move(current_move);
+    }
+
+#ifdef BENCH
+    if (isRoot) {
+        int elapsed = get_time_ms() - start_time;
+        
+        std::cout << "depth       : " << depth << "\n";
+        std::cout << "total nodes : " << nodes << "\n";
+        std::cout << "time (ms)   : " << elapsed << "\n";
+
+        if (elapsed > 0) {
+            uint64_t nps = (nodes * 1000ULL) / elapsed;
+            std::cout << "nps         : " << nps << "\n";
+        }
+    }
+#endif
   
-  return nodes;
+    return nodes;
 }
 
 /**********************************\
