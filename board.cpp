@@ -291,8 +291,6 @@ void Board::make_move(Move& move, BoardState& new_state) {
         make_promotion<FORWARD>(from_square, to_square, prom_to);
     }
 
-    // set_state();
-
     ActiveColor = Color(ActiveColor ^ 1);
     Ply++;
 }
@@ -330,7 +328,6 @@ void Board::unmake_move(Move& move) {
     bs = bs->Previous;
 }
 
-// ugly for now :"(
 bool Board::legal(Move& move) const { 
     int from_sq = move.getFrom();
     int to_sq = move.getTo();

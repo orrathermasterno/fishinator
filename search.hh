@@ -8,5 +8,5 @@ class Searcher {
 public:
     static Move root_alphabeta(Board& board, int depth);
     static int alphabeta(Board& board, int alpha, int beta, int depthleft);
-    static int quiescence(const Board& board, int alpha, int beta);
+    static int quiescence(Board& board, int alpha, int beta);
 };
