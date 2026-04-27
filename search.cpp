@@ -82,51 +82,55 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
 }
 
 int Searcher::quiescence(Board& board, int alpha, int beta) {
-    int static_eval = Evaluator::evaluate(board); 
-    int bestValue = static_eval, score;
-    bool in_check = board.king_in_check();
-    MoveList ml = MoveList();
-
-
-    if (!in_check) {
-        // stand pat
-        if(bestValue >= beta)
-            return bestValue;
-        if(bestValue > alpha)   
-            alpha = bestValue;
-
-        ml.generate_pseudolegals<CAPTURE>(board);
-    }
-    else {
-        bestValue = -INFINITY_VAL;
-        ml.generate_pseudolegals<GET_OUT_OF_CHECK>(board);
-    }
-
-    for (const Move* ptr = ml.Moves; ptr < ml.last; ++ptr) {
-        Move current_move = *ptr;
-
-        if (!board.legal(current_move)) {
-            continue; 
-        }
-
-        BoardState state = BoardState(); 
-        board.make_move(current_move, state);
-
-        score = -quiescence(board, -beta, -alpha);
-
-        board.unmake_move(current_move);
-
-        if( score >= beta )
-            return score;
-        if( score > bestValue )
-            bestValue = score;
-        if( score > alpha )
-            alpha = score;
-    }
-
-    if(in_check && bestValue == -INFINITY_VAL) { // mate
-        return -CHECKMATE_VAL + board.Ply;
-    }
-
-    return bestValue;
+    return Evaluator::evaluate(board); // temp
 }
+
+// int Searcher::quiescence(Board& board, int alpha, int beta) {
+//     int static_eval = Evaluator::evaluate(board); 
+//     int bestValue = static_eval, score;
+//     bool in_check = board.king_in_check();
+//     MoveList ml = MoveList();
+
+
+//     if (!in_check) {
+//         // stand pat
+//         if(bestValue >= beta)
+//             return bestValue;
+//         if(bestValue > alpha)   
+//             alpha = bestValue;
+
+//         ml.generate_pseudolegals<CAPTURE>(board);
+//     }
+//     else {
+//         bestValue = -INFINITY_VAL;
+//         ml.generate_pseudolegals<GET_OUT_OF_CHECK>(board);
+//     }
+
+//     for (const Move* ptr = ml.Moves; ptr < ml.last; ++ptr) {
+//         Move current_move = *ptr;
+
+//         if (!board.legal(current_move)) {
+//             continue; 
+//         }
+
+//         BoardState state = BoardState(); 
+//         board.make_move(current_move, state);
+
+//         score = -quiescence(board, -beta, -alpha);
+
+//         board.unmake_move(current_move);
+
+//         if( score >= beta )
+//             return score;
+//         if( score > bestValue )
+//             bestValue = score;
+//         if( score > alpha )
+//             alpha = score;
+//     }
+
+//     if(in_check && bestValue == -INFINITY_VAL) { // mate
+//         return -CHECKMATE_VAL + board.Ply;
+//     }
+
+//     return bestValue;
+// }

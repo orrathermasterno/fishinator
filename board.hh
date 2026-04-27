@@ -22,16 +22,11 @@ struct BoardState {
     ColoredPiece CapturedPiece;
     BoardState* Previous; 
 
-    Bitboard pinners[2]; // pinners[BLACK] represents black pieces pinning some white pieces
-    Bitboard blockers[2]; // blockers[BLACK] represents black pieces being pinned by some white pieces
-    bool pins_calculated[2];
-
     BoardState() {
         EnPassant = ILLEGAL_SQ;
         Castling = NO_CASTLING;
         Previous = nullptr;
         CapturedPiece = NO_PIECE;
-        pins_calculated[WHITE] = 0; pins_calculated[BLACK] = 0; 
     }
 
     // lacks 50-moves counter and pinned boards, at the very least
@@ -49,6 +44,10 @@ public:
     BoardState* bs;
 
     int Ply;
+
+    mutable Bitboard pinners[2]; // pinners[BLACK] represents black pieces pinning some white pieces
+    mutable Bitboard blockers[2]; // blockers[BLACK] represents black pieces being pinned by some white pieces
+    mutable bool pins_calculated[2];
 
 
     void clear();
@@ -166,10 +165,10 @@ public:
 
 
     inline Bitboard get_blockers(Color side) const {
-        if(!bs->pins_calculated[side]) {
+        if(!pins_calculated[side]) {
             set_pinners_and_blockers(side);
         }
-        return bs->blockers[side];
+        return blockers[side];
     }
 
     inline bool is_pinned(int sq, Color side) const {

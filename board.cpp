@@ -15,6 +15,8 @@ void Board::clear() {
     std::fill(Mailbox, Mailbox + SQ_AMOUNT, NO_PIECE);
     std::fill(PieceBB, PieceBB + ALL_PIECES, 0ULL);
     std::fill(ColorBB, ColorBB + COLOR_NB, 0ULL);
+
+    pins_calculated[WHITE] = 0; pins_calculated[BLACK] = 0; 
 }
 
 void Board::print_board_state()
@@ -223,25 +225,25 @@ int Board::is_pinned_by_old(int sq) {
 }
 
 void Board::set_pinners_and_blockers(Color ColorToUpdate) const {
-    bs->pinners[~ColorToUpdate] = 0ULL;
-    bs->blockers[ColorToUpdate] = 0ULL;
-    bs->pins_calculated[ColorToUpdate] = true;
+    pinners[~ColorToUpdate] = 0ULL;
+    blockers[ColorToUpdate] = 0ULL;
+    pins_calculated[ColorToUpdate] = true;
 
     int king_sq = get_king_sq(ColorToUpdate);
 
     Bitboard slider_attackers = enemy_attackers_of(king_sq, ColorBB[~ColorToUpdate], ColorToUpdate)
                                 & get_colored_joint_piece_bb(Color(~ColorToUpdate), ROOK, QUEEN, BISHOP);
 
-    int attacker_sq; Bitboard path, blockers;
+    int attacker_sq; Bitboard path, blockers_bb;
 
     while(slider_attackers) {
         attacker_sq = pop_lsb(slider_attackers);
         path = Attacks::get_between_sq_bb(king_sq, attacker_sq);
-        blockers = path & ColorBB[ColorToUpdate];
+        blockers_bb = path & ColorBB[ColorToUpdate];
 
-        if (population_count(blockers) == 1) {
-            bs->pinners[~ColorToUpdate] |= set_bit(0ULL, attacker_sq); 
-            bs->blockers[ColorToUpdate]|= blockers;
+        if (population_count(blockers_bb) == 1) {
+            pinners[~ColorToUpdate] |= set_bit(0ULL, attacker_sq); 
+            blockers[ColorToUpdate]|= blockers_bb;
         }
     }
 }
@@ -263,7 +265,7 @@ void Board::make_move(Move& move, BoardState& new_state) {
     new_state.Castling = CastlingRights(uint8_t(new_state.Castling) & CastlingMasks[from_square] & CastlingMasks[to_square]);
     new_state.CapturedPiece = captured_piece;
     new_state.EnPassant = ILLEGAL_SQ;
-    new_state.pins_calculated[WHITE]=false; new_state.pins_calculated[BLACK]=false;
+    pins_calculated[WHITE]=false; pins_calculated[BLACK]=false;
 
     // premove routine
     if(!capture) {
