@@ -297,7 +297,6 @@ void Board::set_pinners_and_blockers(Color ColorToUpdate) const {
     }
 }
 
-// TODO: repetiotion checks, 50-move counter
 void Board::make_move(Move& move, BoardState& new_state) {
 
     int from_square = move.getFrom();
@@ -316,6 +315,8 @@ void Board::make_move(Move& move, BoardState& new_state) {
     new_state.CapturedPiece = captured_piece;
     new_state.EnPassant = ILLEGAL_SQ;
     pins_calculated[WHITE]=false; pins_calculated[BLACK]=false;
+    new_state.HalfmoveClock = (capture || type_of(moved_piece) == PAWN) ? 0 : new_state.Previous->HalfmoveClock+1;
+    new_state.Repetition = 0;
 
     PositionKey new_key = new_state.Previous->Key ^ Zobrist::black_to_move;
 
