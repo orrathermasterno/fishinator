@@ -25,7 +25,7 @@ enum Piece: std::uint8_t {
 enum ColoredPiece: std::uint8_t {
   W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
   B_PAWN=8, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING, 
-  NO_PIECE
+  NO_CPIECE
 };
 
 constexpr Piece type_of(ColoredPiece pc) { return Piece(pc & 7); }
@@ -49,7 +49,6 @@ enum Square: int {
   ILLEGAL_SQ
 };
 
-
   // noWe         nort         noEa
   //         +7    +8    +9
   //             \  |  /
@@ -70,7 +69,7 @@ enum Direction: int {
 };
 
 enum File: int {
-  FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H
+  FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, FILE_NUM
 };
 
 enum Rank: int {
@@ -86,7 +85,9 @@ enum CastlingRights: uint8_t {
 
     WHITE_EITHER_CASTLING = WHITE_OO | WHITE_OOO,
     BLACK_EITHER_CASTLING = BLACK_OO | BLACK_OOO,
-    ALL_CASTLING   = WHITE_EITHER_CASTLING | BLACK_EITHER_CASTLING,
+    EVERYTHING_CASTLING   = WHITE_EITHER_CASTLING | BLACK_EITHER_CASTLING,
+
+    CASTLING_STATES_NUM = 16
 };
 
 constexpr Bitboard WHITE_OO_BLOCKERS  = (1ULL << f1) | (1ULL << g1);
@@ -197,8 +198,7 @@ constexpr bool is_safe_shift(int sq, Direction d) {
           && abs(get_file(sq) - get_file(target_sq)) <= 1;
 }
 
-void print_board_state();
-
+constexpr std::string_view EncodedPieces("PNBRQKxxpnbrqk");
 
 constexpr auto START_FEN   = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -212,5 +212,3 @@ const char* const square_to_string[64] = {
     "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
     "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
 };
-
-constexpr std::string_view EncodedPieces("PNBRQKxxpnbrqk");

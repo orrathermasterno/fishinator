@@ -7,6 +7,8 @@
 #include <cassert>
 #include "move.hh"
 
+typedef uint64_t PositionKey;
+
 enum SetPieceSwitch {
     ADD_PIECE, REMOVE_PIECE
 };
@@ -15,21 +17,32 @@ enum MoveSwitch {
     FORWARD, BACK
 };
 
+struct Zobrist {
+    static PositionKey piece_on_sq[NO_CPIECE][ILLEGAL_SQ];
+    static PositionKey black_to_move;
+    static PositionKey castling[CASTLING_STATES_NUM];
+    static PositionKey enpassant[FILE_NUM];
+
+    static void init();
+};
+
 // irreversible stuff for Copy-Make
 struct BoardState {
+    PositionKey Key;
     CastlingRights Castling;
     int EnPassant;
     ColoredPiece CapturedPiece;
+    int HalfmoveClock;
+
     BoardState* Previous; 
 
     BoardState() {
+        Key = 0; HalfmoveClock = 0;
         EnPassant = ILLEGAL_SQ;
         Castling = NO_CASTLING;
         Previous = nullptr;
-        CapturedPiece = NO_PIECE;
+        CapturedPiece = NO_CPIECE;
     }
-
-    // lacks 50-moves counter and pinned boards, at the very least
 };
 
 class Board {
@@ -64,12 +77,12 @@ public:
     template<SetPieceSwitch sw>
     inline void set_piece(ColoredPiece p, int sq) { 
         if constexpr (sw == ADD_PIECE) {
-            assert(Mailbox[sq] == NO_PIECE);
+            assert(Mailbox[sq] == NO_CPIECE);
             Mailbox[sq] = p;
         }
         else {
             assert(Mailbox[sq] == p);
-            Mailbox[sq] = NO_PIECE; // sw == REMOVE_PIECE
+            Mailbox[sq] = NO_CPIECE; // sw == REMOVE_PIECE
         }
 
         Bitboard square_bb = set_bit(0ULL, sq);

@@ -4,6 +4,11 @@
 #include <cctype>
 #include <string>
 #include "attacks.hh"
+#include "prng.hh"
+
+static constexpr ColoredPiece ColoredPieces[] = {W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
+                                   B_PAWN, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING};
+
 
 void Board::clear() {
     ActiveColor = WHITE;
@@ -12,11 +17,39 @@ void Board::clear() {
     root_state = BoardState();
     bs = &root_state;
 
-    std::fill(Mailbox, Mailbox + SQ_AMOUNT, NO_PIECE);
+    std::fill(Mailbox, Mailbox + SQ_AMOUNT, NO_CPIECE);
     std::fill(PieceBB, PieceBB + ALL_PIECES, 0ULL);
     std::fill(ColorBB, ColorBB + COLOR_NB, 0ULL);
 
     pins_calculated[WHITE] = 0; pins_calculated[BLACK] = 0; 
+}
+
+
+// Zobrist initialization:
+//  1. One number for each piece at each square
+//  2. One number to indicate the side to move is black
+//  3. Sixteen numbers for castling rights
+//  4. Eight numbers to indicate the file of a valid En passant square, if any
+PositionKey Zobrist::piece_on_sq[NO_CPIECE][ILLEGAL_SQ];
+PositionKey Zobrist::black_to_move;
+PositionKey Zobrist::castling[CASTLING_STATES_NUM];
+PositionKey Zobrist::enpassant[FILE_NUM];
+
+void Zobrist::init(){
+    Xorshift prng = Xorshift(10227);
+    // 1
+    for (ColoredPiece pc : ColoredPieces) {
+        for (int s = a1; s <= h8; ++s)
+            piece_on_sq[pc][s] = prng.rand64();
+    }
+    // 2
+    black_to_move = prng.rand64();
+    // 3
+    for (int cr = NO_CASTLING; cr < CASTLING_STATES_NUM; cr++)
+        castling[cr] = prng.rand64();
+    // 4
+    for (int file = FILE_A; file <= FILE_H; file++)
+        enpassant[file] = prng.rand64();
 }
 
 void Board::print_board_state()
@@ -256,7 +289,7 @@ void Board::make_move(Move& move, BoardState& new_state) {
 
     ColoredPiece moved_piece = Mailbox[from_square];
     ColoredPiece captured_piece = move.is_ep()? make_colored_piece(Color(ActiveColor^1), PAWN) : Mailbox[to_square];
-    bool capture = (captured_piece != NO_PIECE);
+    bool capture = (captured_piece != NO_CPIECE);
 
     new_state = *bs;
     new_state.Previous = bs;
@@ -306,7 +339,7 @@ void Board::unmake_move(Move& move) {
 
     ColoredPiece moved_piece = Mailbox[to_square];
     ColoredPiece captured_piece = bs->CapturedPiece;
-    bool capture = (captured_piece != NO_PIECE);
+    bool capture = (captured_piece != NO_CPIECE);
 
     // the move itself
     if (!move.is_promotion()) move_piece<BACK>(from_square, to_square, moved_piece);

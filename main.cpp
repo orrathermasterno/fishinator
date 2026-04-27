@@ -14,6 +14,7 @@
 int main() {
   Attacks::init();
   Evaluator::init();
+  Zobrist::init();
 
   // // Board board = Board{};
   // // board.parse_FEN("8/8/8/8/8/8/7k/QQQQQQQQ b - - 0 1");
