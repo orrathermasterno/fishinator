@@ -178,7 +178,20 @@ void Board::parse_FEN(const std::string& fen) {
         bs->EnPassant = Square(rank*8 + file);
     }
 
-    set_state();
+    set_pinners_and_blockers();
+
+    // compute position key
+    Bitboard all_pieces_bb = get_color_bb(BOTH);
+    while(all_pieces_bb) {
+        int sq = pop_lsb(all_pieces_bb);
+        int c_piece = Mailbox[sq];
+
+        bs->Key ^= Zobrist::piece_on_sq[c_piece][sq];
+    }
+
+    if (ActiveColor == BLACK) bs->Key ^= Zobrist::black_to_move;
+    if (bs->EnPassant != ILLEGAL_SQ) bs->Key ^= Zobrist::enpassant[get_file(bs->EnPassant)];
+    bs->Key ^= Zobrist::castling[bs->Castling];
 }
 
 template<MoveSwitch sw>
@@ -204,18 +217,21 @@ void Board::make_promotion(int from_square, int to_square, ColoredPiece piece_to
 }
 
 template<MoveSwitch sw>
-void Board::castle(bool kingside) {
+void Board::castle(ColoredPiece& crook, int& rook_sq_from, int& rook_sq_to, bool kingside) {
+    crook = ActiveColor == WHITE ? W_ROOK : B_ROOK;
+
+    int rank_offset = ActiveColor * 56; 
+
     if (kingside) {
-        if(ActiveColor == WHITE) move_piece<sw>(h1, f1, W_ROOK);
-
-        else move_piece<sw>(h8, f8, B_ROOK);
-    }
-
+        rook_sq_from = h1 + rank_offset;
+        rook_sq_to   = f1 + rank_offset;
+    } 
     else { // queenside
-        if(ActiveColor == WHITE) move_piece<sw>(a1, d1, W_ROOK);
-
-        else move_piece<sw>(a8, d8, B_ROOK);
+        rook_sq_from = a1 + rank_offset;
+        rook_sq_to   = d1 + rank_offset;
     }
+
+    move_piece<sw>(rook_sq_from, rook_sq_to, crook);
 }
 
 bool Board::castling_path_is_safe(int king_sq, int rook_sq, bool IsKingside) const {
@@ -286,6 +302,7 @@ void Board::make_move(Move& move, BoardState& new_state) {
 
     int from_square = move.getFrom();
     int to_square = move.getTo();
+    int captured_square = to_square; // changes in case of ep
 
     ColoredPiece moved_piece = Mailbox[from_square];
     ColoredPiece captured_piece = move.is_ep()? make_colored_piece(Color(ActiveColor^1), PAWN) : Mailbox[to_square];
@@ -300,34 +317,53 @@ void Board::make_move(Move& move, BoardState& new_state) {
     new_state.EnPassant = ILLEGAL_SQ;
     pins_calculated[WHITE]=false; pins_calculated[BLACK]=false;
 
+    PositionKey new_key = new_state.Previous->Key ^ Zobrist::black_to_move;
+
+    // update castling and ep for new key
+    new_key ^= Zobrist::castling[new_state.Previous->Castling];
+    new_key ^= Zobrist::castling[new_state.Castling];
+    if (new_state.Previous->EnPassant != ILLEGAL_SQ) 
+        new_key ^= Zobrist::enpassant[get_file(new_state.Previous->EnPassant)];
+
     // premove routine
     if(!capture) {
         if (move.is_double_push()) { // if move was a double push, additionally update EnPassant state
             int push = pawn_push_direction(ActiveColor);
             new_state.EnPassant = to_square - push;
+            new_key ^= Zobrist::enpassant[get_file(new_state.EnPassant)];
         }
 
         if (move.is_castle()) {
-            castle<FORWARD>(move.is_king_castle()); // moves rook
+            int rook_sq_from, rook_sq_to;
+            ColoredPiece crook;
+            castle<FORWARD>(crook, rook_sq_from, rook_sq_to, move.is_king_castle()); // moves rook
+            new_key ^= Zobrist::piece_on_sq[crook][rook_sq_from] ^ Zobrist::piece_on_sq[crook][rook_sq_to]; 
         }
     }
     else { // capture
         if(move.is_ep()) {
             int push =  pawn_push_direction(ActiveColor);
-            set_piece<REMOVE_PIECE>(captured_piece, to_square-push);
+            captured_square = to_square-push;
+            set_piece<REMOVE_PIECE>(captured_piece, captured_square);
         }
         else set_piece<REMOVE_PIECE>(captured_piece, to_square);
+
+        new_key ^= Zobrist::piece_on_sq[captured_piece][captured_square];
     }
 
     // the move itself
+    new_key ^= Zobrist::piece_on_sq[moved_piece][from_square];
     if (!move.is_promotion()) move_piece<FORWARD>(from_square, to_square, moved_piece);
     else {
-        ColoredPiece prom_to = move.get_promotion_type(ActiveColor);
-        make_promotion<FORWARD>(from_square, to_square, prom_to);
+        // ColoredPiece prom_to = move.get_promotion_type(ActiveColor);
+        moved_piece = move.get_promotion_type(ActiveColor);
+        make_promotion<FORWARD>(from_square, to_square, moved_piece);
     }
+    new_key ^= Zobrist::piece_on_sq[moved_piece][to_square];
 
     ActiveColor = Color(ActiveColor ^ 1);
     Ply++;
+    new_state.Key = new_key;
 }
 
 void Board::unmake_move(Move& move) {
@@ -350,11 +386,12 @@ void Board::unmake_move(Move& move) {
 
     // premove routine
     if (!capture && move.is_castle()) {
-        castle<BACK>(move.is_king_castle());
+        int dummy1, dummy2; ColoredPiece dummy3;
+        castle<BACK>(dummy3, dummy1, dummy2, move.is_king_castle());
     }
     else if (capture) {
         if(move.is_ep()) {
-            Direction push = ActiveColor == WHITE ? NORTH : SOUTH;
+            int push = pawn_push_direction(ActiveColor);
             set_piece<ADD_PIECE>(captured_piece, to_square-push);
         }
         else set_piece<ADD_PIECE>(captured_piece, to_square);
@@ -423,5 +460,5 @@ template void Board::move_piece<BACK>(int, int, ColoredPiece);
 template void Board::make_promotion<FORWARD>(int, int, ColoredPiece);
 template void Board::make_promotion<BACK>(int, int, ColoredPiece);
 
-template void Board::castle<FORWARD>(bool);
-template void Board::castle<BACK>(bool);
+template void Board::castle<FORWARD>(ColoredPiece&, int&, int&, bool);
+template void Board::castle<BACK>(ColoredPiece&, int&, int&, bool);

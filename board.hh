@@ -32,12 +32,14 @@ struct BoardState {
     CastlingRights Castling;
     int EnPassant;
     ColoredPiece CapturedPiece;
+
     int HalfmoveClock;
+    int Repetition;
 
     BoardState* Previous; 
 
     BoardState() {
-        Key = 0; HalfmoveClock = 0;
+        Key = 0; HalfmoveClock = 0; Repetition = 0;
         EnPassant = ILLEGAL_SQ;
         Castling = NO_CASTLING;
         Previous = nullptr;
@@ -95,8 +97,8 @@ public:
 
     void parse_FEN(const std::string& fenStr);
 
-    inline Bitboard get_white_pawns() const{
-        return PieceBB[PAWN] & ColorBB[WHITE];
+    inline Bitboard get_color_bb(Color C) const{
+        return ColorBB[C];
     }
 
     template<Piece P>
@@ -190,8 +192,8 @@ public:
 
     void set_pinners_and_blockers(Color ColorToUpdate) const;
 
-    inline void set_state() {
-        // update pinners and blockers for both sides
+    // update pinners and blockers for both sides
+    inline void set_pinners_and_blockers() {
         set_pinners_and_blockers(WHITE);
         set_pinners_and_blockers(BLACK);
     }
@@ -213,7 +215,7 @@ public:
     void make_promotion(int sq_from, int sq_to, ColoredPiece piece_to);
 
     template<MoveSwitch sw>
-    void castle(bool kingside);
+    void castle(ColoredPiece& crook, int& rook_sq_from, int& rook_sq_to, bool kingside);
 
     void make_move(Move& move, BoardState& new_state);
     void unmake_move(Move& move);
