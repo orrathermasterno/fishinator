@@ -1,7 +1,10 @@
 #include "search.hh"
 #include "evaluation.hh"
 
+int Searcher::root_game_ply;
+
 Move Searcher::root_alphabeta(Board& board, int depth) {
+    root_game_ply = board.Ply;
     MoveList ml = MoveList();
     Color us = board.ActiveColor;     
     int score;
@@ -36,6 +39,11 @@ Move Searcher::root_alphabeta(Board& board, int depth) {
 
 int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
     if(depth_left == 0) return quiescence(board, alpha, beta);
+
+    int ply_since_search_root = board.Ply - root_game_ply;
+
+    if(board.is_forced_draw(ply_since_search_root)) 
+        return 0;
 
     MoveList ml = MoveList();
 
@@ -73,7 +81,7 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
     if (!legals) {
 
         if (board.king_in_check()) // checkmate
-            return -CHECKMATE_VAL + board.Ply;
+            return -CHECKMATE_VAL + ply_since_search_root;
 
         return 0; // stalemate
     }
@@ -90,6 +98,10 @@ int Searcher::quiescence(Board& board, int alpha, int beta) {
 //     int bestValue = static_eval, score;
 //     bool in_check = board.king_in_check();
 //     MoveList ml = MoveList();
+//     int ply_since_search_root = board.Ply - root_game_ply;
+
+//     if(board.is_forced_draw(ply_since_search_root)) 
+//         return 0;
 
 
 //     if (!in_check) {

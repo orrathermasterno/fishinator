@@ -221,4 +221,17 @@ public:
     void unmake_move(Move& move);
 
     bool legal(Move& move) const;
+
+    inline bool is_forced_draw(int ply_since_search_root) {
+        return (bs->HalfmoveClock > 99) || is_repetition(ply_since_search_root);
+    }
+
+    // true if: 
+    //  (1) the position occurred twice before the search root (=> during the actual game), 
+    //          and the search just encountered it again (so three occurrences in total);
+    //  (2) the position was encountered twice inside search regardless of whether it ever occurred outside
+    //          (since the first repetition inside the tree will result in a cycle).
+    inline bool is_repetition(int ply_since_search_root) const { 
+        return bs->Repetition && bs->Repetition < ply_since_search_root; 
+    }
 };

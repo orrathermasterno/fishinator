@@ -365,6 +365,18 @@ void Board::make_move(Move& move, BoardState& new_state) {
     ActiveColor = Color(ActiveColor ^ 1);
     Ply++;
     new_state.Key = new_key;
+
+    // repetition eager eval
+    if (bs->HalfmoveClock >= 4) { // position cannot repeat in less than 4 moves
+        BoardState* prevprev_state = bs->Previous->Previous;
+        for (int i = 4; i <= bs->HalfmoveClock; i += 2) {
+            prevprev_state = prevprev_state->Previous->Previous; // i++ going from current move backwards
+            if(prevprev_state->Key == bs->Key) {
+                bs->Repetition = prevprev_state->Repetition ? -1 : i; // possible technical debt when it comes to tt
+                break;
+            }
+        }
+    }
 }
 
 void Board::unmake_move(Move& move) {
