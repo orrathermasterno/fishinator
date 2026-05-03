@@ -24,8 +24,13 @@ public:
     static constexpr Move empty_move() { return Move(); }
     constexpr bool is_empty() { return data == 0; }
 
-    void operator=(Move a) {data = a.data;}
-    bool operator==(Move a) {return data == a.data;}
+    Move& operator=(Move a) {
+        data = a.data;
+        return *this; 
+    }
+
+    bool operator==(Move a) const { return data == a.data; }
+    bool operator!=(Move a) const { return data != a.data; }
 
     constexpr int getTo() const {return data & 0x3f;}
     constexpr int getFrom() const {return (data >> 6) & 0x3f;}

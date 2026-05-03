@@ -285,7 +285,6 @@ uint64_t Perft(Board& board, int depth)
         int elapsed = get_time_ms() - start_time;
         
         std::cout << "depth       : " << depth << "\n";
-        std::cout << "total nodes : " << nodes << "\n";
         std::cout << "time (ms)   : " << elapsed << "\n";
 
         if (elapsed > 0) {

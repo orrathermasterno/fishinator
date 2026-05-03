@@ -153,6 +153,10 @@ public:
         return bit_scan_forward(PieceBB[KING] & ColorBB[color]);
     }
 
+    inline int get_mailbox(Square sq) const {
+        return Mailbox[sq];
+    }
+
     inline ColoredPiece get_piece_from_sq(int sq) {
         return Mailbox[sq];
     }
@@ -223,7 +227,7 @@ public:
     bool legal(Move& move) const;
 
     inline bool is_forced_draw(int ply_since_search_root) {
-        return (bs->HalfmoveClock > 99) || is_repetition(ply_since_search_root);
+        return (bs->HalfmoveClock > 99) || is_repetition(ply_since_search_root); // what if 50rule can be avoided by mate?
     }
 
     // true if: 
