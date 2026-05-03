@@ -11,7 +11,7 @@
 * [Alpha-Beta](https://www.chessprogramming.org/Alpha-Beta)
 * [Quiescence](https://www.chessprogramming.org/Quiescence_Search)
 * [Move Ordering](https://www.chessprogramming.org/Move_Ordering)
-- MVV-LVA
+    * MVV-LVA
 
 **Evaluation**
 * [testing purposes] [PeSTO's Evaluation Function](https://www.chessprogramming.org/PeSTO%27s_Evaluation_Function)
