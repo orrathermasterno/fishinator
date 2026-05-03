@@ -84,8 +84,6 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
 
         legals++;
 
-        std::cout << "search" << ply_since_search_root << ": " << current_move.move_to_str(us) << "\n";
-
         BoardState state = BoardState(); 
         board.make_move(current_move, state);
 
@@ -157,8 +155,6 @@ int Searcher::quiescence(Board& board, int alpha, int beta) {
         if ((is_pinned || current_move.getFrom() == king_sq || current_move.is_ep()) 
             && !board.legal(current_move))
            continue;
-
-        std::cout << "qsearch" << ply_since_search_root << ": " << current_move.move_to_str(us) << "\n";
 
         BoardState state = BoardState(); 
         board.make_move(current_move, state);

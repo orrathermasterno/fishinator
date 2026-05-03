@@ -411,6 +411,8 @@ void Board::unmake_move(Move& move) {
     }
 
     bs = bs->Previous;
+    pins_calculated[WHITE] = false;
+    pins_calculated[BLACK] = false;
 }
 
 bool Board::legal(Move& move) const { 
