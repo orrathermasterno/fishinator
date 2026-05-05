@@ -138,7 +138,7 @@ void Board::parse_FEN(const std::string& fen) {
     std::string pieces, color, castling, enPassant; 
 
     // 5-6.
-    ss >> pieces >> color >> castling >> enPassant >> Ply;
+    ss >> pieces >> color >> castling >> enPassant >> bs->HalfmoveClock >> Ply;
     
     // 1.
     for (char token : pieces) {
@@ -157,6 +157,7 @@ void Board::parse_FEN(const std::string& fen) {
     
     // 2.
     ActiveColor = color == "w" ? WHITE : BLACK; 
+    Ply = std::max(2 * (Ply - 1), 0) + (ActiveColor == BLACK);
 
     // 3.
     bs->Castling = CastlingRights(0);
