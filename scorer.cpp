@@ -3,13 +3,13 @@
 // mvv_lva[attacker][victim]
 constexpr int mvv_lva[ALL_PIECES][ALL_PIECES-1] = {
 // ( Attacker ↓ / Victim → )
-//  Pawn Knight Bishop   Rook  Queen   King
-    105, 205,   305,    405,    505,     
-    104, 204,   304,    404,    504,    
-    103, 203,   303,    403,    503,   
-    102, 202,   302,    402,    502,    
-    101, 201,   301,    401,    501,   
-    100, 200,   300,    400,    500,   
+//   Pawn       Knight  Bishop      Rook        Queen   King
+    1000105, 1000205,   1000305,    1000405,    1000505,     
+    1000104, 1000204,   1000304,    1000404,    1000504,    
+    1000103, 1000203,   1000303,    1000403,    1000503,   
+    1000102, 1000202,   1000302,    1000402,    1000502,    
+    1000101, 1000201,   1000301,    1000401,    1000501,   
+    1000100, 1000200,   1000300,    1000400,    1000500,   
 };
 
 void Scorer::insertion_sort() {
@@ -41,7 +41,13 @@ ScoredMove* Scorer::score(const MoveList& ml) {
             cur->score     = mvv_lva[attacker][victim];
         } 
         else if constexpr (T == QUIET) {
-            cur->score = 0; 
+            if(node_killers) {
+            if (move == node_killers[FIRST_KILLER])
+                cur->score = 900000;
+
+            if (move == node_killers[SECOND_KILLER])
+                cur->score = 800000;
+            }
         }
         else { // outofcheck
             Piece victim   = type_of(board.Mailbox[move.getTo()]);

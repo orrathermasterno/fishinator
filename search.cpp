@@ -4,6 +4,31 @@
 
 int Searcher::root_game_ply;
 
+
+/**********************************\
+==================================
+
+            move ordering
+
+==================================
+\**********************************/
+Move Searcher::killers[MAX_PLY][MAX_KILLERS];
+
+void Searcher::add_killer(const Move& move, int ply) {
+    if (move == killers[ply][FIRST_KILLER]) return;
+
+    killers[ply][SECOND_KILLER] = killers[ply][FIRST_KILLER];
+    killers[ply][FIRST_KILLER] = move;
+}
+
+/**********************************\
+==================================
+
+            search
+
+==================================
+\**********************************/
+
 #ifdef BENCH
     int Searcher::nodes;
     int Searcher::qnodes;
@@ -19,7 +44,7 @@ Move Searcher::root_alphabeta(Board& board, int depth) {
     int beta = INFINITY_VAL;
     int bestValue = -INFINITY_VAL;
 
-    Scorer sc = Scorer(board, false);
+    Scorer sc = Scorer(board, false, nullptr);
 
     Move current_move;
 
@@ -71,7 +96,7 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
 
     int legals = 0;
 
-    Scorer sc = Scorer(board, false);
+    Scorer sc = Scorer(board, false, killers[ply_since_search_root]);
 
     Move current_move;
 
@@ -97,8 +122,10 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
             if(score > alpha)
                 alpha = score; // alpha acts like max in MiniMax
         }
-        if(score >= beta)
+        if(score >= beta) {
+            if(!current_move.is_capture() && !current_move.is_promotion()) add_killer(current_move, ply_since_search_root);
             return bestValue;   // fail soft beta-cutoff
+        }
     }
 
 
@@ -145,7 +172,7 @@ int Searcher::quiescence(Board& board, int alpha, int beta) {
     }
 
 
-    Scorer sc = Scorer(board, true);
+    Scorer sc = Scorer(board, true, nullptr);
 
     Move current_move;
 

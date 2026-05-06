@@ -2,6 +2,10 @@
 #include "bitboard.hh"
 #include <string>
 
+enum Killers: uint8_t { // for search
+    FIRST_KILLER, SECOND_KILLER
+};
+
 enum MoveFlag: uint8_t {
     QUIET_F, DOUBLE_PAWN_PUSH_F, KING_CASTLE_F, QUEEN_CASTLE_F, CAPTURES_F, EP_CAPTURE_F, // CAPTURES_F is only set for pawns
     KNIGHT_PROM_F = 8, BISHOP_PROM_F, ROOK_PROM_F, QUEEN_PROM_F, 

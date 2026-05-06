@@ -34,8 +34,11 @@ class Scorer {
 
     ScoredMove SMoves[MAX_MOVES], *sm_start, *sm_end, *yield;
 
+    const Move* node_killers;
+
 public:
-    Scorer(const Board& passed_board, bool is_qs) : board(passed_board), state(SHASH_MOVE), current_move(nullptr), sm_start(SMoves), qsearch(is_qs) {
+    Scorer(const Board& passed_board, bool is_qs, const Move* killers_for_ply) : board(passed_board), state(SHASH_MOVE),
+     current_move(nullptr), sm_start(SMoves), qsearch(is_qs), node_killers(killers_for_ply) {
         if (board.king_in_check()) state = SINIT_OUTOFCHECK;
     };
     Move next_move();
