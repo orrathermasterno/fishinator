@@ -153,10 +153,6 @@ public:
         return bit_scan_forward(PieceBB[KING] & ColorBB[color]);
     }
 
-    inline int get_mailbox(Square sq) const {
-        return Mailbox[sq];
-    }
-
     inline ColoredPiece get_piece_from_sq(int sq) {
         return Mailbox[sq];
     }

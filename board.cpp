@@ -306,7 +306,7 @@ void Board::make_move(Move& move, BoardState& new_state) {
 
     ColoredPiece moved_piece = Mailbox[from_square];
     ColoredPiece captured_piece = move.is_ep()? make_colored_piece(Color(ActiveColor^1), PAWN) : Mailbox[to_square];
-    bool capture = (captured_piece != NO_CPIECE);
+    bool capture = move.is_capture();
 
     new_state = *bs;
     new_state.Previous = bs;

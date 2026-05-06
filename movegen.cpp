@@ -23,22 +23,20 @@ void MoveList::print_movelist() const {
 }
 
 // unsuitable for pawns
-// // unsure how to handle capture flag rn, subject to change 
-// // // what if i just discard them completely for now what then 
-// template<Piece P, CaptureFlag IsCapture>
-template<Piece P, Color ActiveColor>
+template<Piece P, Color ActiveColor, MoveType T>
 void MoveList::generate_pseudolegals_for(const Board& board, Bitboard targets) {
     Bitboard piece_board = board.get_colored_piece_bb<P>(ActiveColor);
     int from_square;
     Bitboard attacks;
-    // MoveFlag flag = IsCapture ? CAPTURES : QUIET;
+    MoveFlag flag = QUIET_F;
+    if constexpr (T == CAPTURE) flag = CAPTURES_F;
 
     while(piece_board) {
         from_square = pop_lsb(piece_board);
         attacks = Attacks::get_attack_of<P>(from_square, board.ColorBB[BOTH]) & targets;
 
         while(attacks) {
-            *last++ = Move(from_square, pop_lsb(attacks)); // to_square = pop_lsb(attacks);
+            *last++ = Move(from_square, pop_lsb(attacks), flag); // to_square = pop_lsb(attacks);
         }
     }
 }
@@ -183,7 +181,16 @@ void MoveList::generate_pseudolegals(const Board& board) {
     }
                     ;
     Bitboard king_targets = (T == GET_OUT_OF_CHECK) ? ~board.ColorBB[ActiveColor] : targets;
-    generate_pseudolegals_for<KING, ActiveColor>(board, king_targets);
+    if constexpr (T == CAPTURE || T == QUIET) {
+        generate_pseudolegals_for<KING, ActiveColor, T>(board, king_targets);
+    } 
+    else {
+        Bitboard king_captures = king_targets & board.ColorBB[ActiveColor ^ 1];
+        Bitboard king_quiets   = king_targets & ~board.ColorBB[BOTH];
+        
+        generate_pseudolegals_for<KING, ActiveColor, CAPTURE>(board, king_captures);
+        generate_pseudolegals_for<KING, ActiveColor, QUIET>(board, king_quiets);
+    }
 
     //////////////////////
     if (more_than_one(king_attackers)) return; // double check cannot be resolved by any moves save the king's
@@ -192,10 +199,25 @@ void MoveList::generate_pseudolegals(const Board& board) {
     if constexpr (T != CAPTURE && T != GET_OUT_OF_CHECK) generate_castling<ActiveColor>(board);
 
     generate_pawn_pseudolegals<T, ActiveColor>(board, targets);
-    generate_pseudolegals_for<KNIGHT, ActiveColor>(board, targets);
-    generate_pseudolegals_for<ROOK, ActiveColor>(board, targets);
-    generate_pseudolegals_for<BISHOP, ActiveColor>(board, targets);
-    generate_pseudolegals_for<QUEEN, ActiveColor>(board, targets);
+    if constexpr (T == CAPTURE || T == QUIET) {
+        generate_pseudolegals_for<KNIGHT, ActiveColor, T>(board, targets);
+        generate_pseudolegals_for<ROOK, ActiveColor, T>(board, targets);
+        generate_pseudolegals_for<BISHOP, ActiveColor, T>(board, targets);
+        generate_pseudolegals_for<QUEEN, ActiveColor, T>(board, targets);
+    }
+    else {
+        Bitboard capture_targets = targets & board.get_color_bb(~ActiveColor);
+        generate_pseudolegals_for<KNIGHT, ActiveColor, CAPTURE>(board, capture_targets);
+        generate_pseudolegals_for<ROOK, ActiveColor, CAPTURE>(board, capture_targets);
+        generate_pseudolegals_for<BISHOP, ActiveColor, CAPTURE>(board, capture_targets);
+        generate_pseudolegals_for<QUEEN, ActiveColor, CAPTURE>(board, capture_targets);
+
+        Bitboard q_targets = targets & ~board.get_color_bb(BOTH);
+        generate_pseudolegals_for<KNIGHT, ActiveColor, QUIET>(board, q_targets);
+        generate_pseudolegals_for<ROOK, ActiveColor, QUIET>(board, q_targets);
+        generate_pseudolegals_for<BISHOP, ActiveColor, QUIET>(board, q_targets);
+        generate_pseudolegals_for<QUEEN, ActiveColor, QUIET>(board, q_targets);
+    }
 }
 
 template<MoveType T>
@@ -263,6 +285,9 @@ uint64_t Perft(Board& board, int depth)
 #endif
 
     ml.generate_all_legals(board);
+
+    if (depth == 1 && !isRoot) 
+        return ml.last-ml.Moves;
 
     for (const Move* ptr = ml.Moves; ptr < ml.last; ++ptr) {
         Move current_move = *ptr;
@@ -343,15 +368,17 @@ template void MoveList::generate_pseudolegals<CAPTURE>(const Board&);
 template void MoveList::generate_pseudolegals<QUIET_AND_CAPTURE>(const Board&);
 template void MoveList::generate_pseudolegals<GET_OUT_OF_CHECK>(const Board&);
 
-#define INSTANTIATE_MOVE_TYPES(PIECE, BOARD, BB, COLOR) \
-    template void MoveList::generate_pseudolegals_for<PIECE, WHITE>(BOARD, BB); \
-    template void MoveList::generate_pseudolegals_for<PIECE, BLACK>(BOARD, BB);
+#define INSTANTIATE_MOVE_TYPES(PIECE) \
+    template void MoveList::generate_pseudolegals_for<PIECE, WHITE, QUIET>(const Board&, Bitboard); \
+    template void MoveList::generate_pseudolegals_for<PIECE, WHITE, CAPTURE>(const Board&, Bitboard); \
+    template void MoveList::generate_pseudolegals_for<PIECE, BLACK, QUIET>(const Board&, Bitboard); \
+    template void MoveList::generate_pseudolegals_for<PIECE, BLACK, CAPTURE>(const Board&, Bitboard);
 
-INSTANTIATE_MOVE_TYPES(KNIGHT, const Board&, Bitboard, Color)
-INSTANTIATE_MOVE_TYPES(BISHOP, const Board&, Bitboard, Color)
-INSTANTIATE_MOVE_TYPES(ROOK,   const Board&, Bitboard, Color)
-INSTANTIATE_MOVE_TYPES(QUEEN,  const Board&, Bitboard, Color)
-INSTANTIATE_MOVE_TYPES(KING,  const Board&, Bitboard, Color)
+INSTANTIATE_MOVE_TYPES(KNIGHT)
+INSTANTIATE_MOVE_TYPES(BISHOP)
+INSTANTIATE_MOVE_TYPES(ROOK)
+INSTANTIATE_MOVE_TYPES(QUEEN)
+INSTANTIATE_MOVE_TYPES(KING)
 
 #undef INSTANTIATE_MOVE_TYPES
 

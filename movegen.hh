@@ -5,6 +5,8 @@
 
 constexpr int MAX_MOVES = 256;
 
+
+// decomposition from stockfish
 enum MoveType: uint8_t {
     QUIET, 
     CAPTURE, 
@@ -25,7 +27,7 @@ public:
 
     void print_movelist() const;
 
-    template<Piece P, Color ActiveColor>
+    template<Piece P, Color ActiveColor, MoveType T>
     void generate_pseudolegals_for(const Board& board, Bitboard targets);
 
     template<MoveFlag Flag>

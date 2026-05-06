@@ -75,6 +75,12 @@ void UCI::parse_position(istringstream& is) {
     set_position(board, fen, moves);
 }
 
+void UCI::clear() {
+    // clear searcher (killers, history)
+
+    // clear tt
+}
+
 void UCI::loop() {
     string line, command, command2;
 
@@ -124,6 +130,10 @@ void UCI::loop() {
                 Move bestmove = Searcher::root_alphabeta(board, depth);
                 cout << "bestmove " << bestmove.move_to_str(board.ActiveColor) << endl;
             }
+        }
+
+        else if (command == "ucinewgame") {
+            clear();
         }
 
     } while (command != "quit");

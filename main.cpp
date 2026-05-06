@@ -73,14 +73,18 @@
 // template uint64_t Perft_scorer<false>(Board&, int);
 
 
+
 int main() {
   Attacks::init();
   Evaluator::init();
   Zobrist::init();
 
-  // Board board = Board();
-  // board.parse_FEN("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
-  // cout << Perft_scorer<true>(board, 5);
+  Board board = Board();
+//   board.parse_FEN("k2n4/4P3/4N3/1pP3q1/8/8/8/4K1R1 w - b6 0 1");
+//   MoveList ml = MoveList();
+//   ml.generate_all_legals(board);
+//   print_movelist(board, ml);
+ // cout << Perft_scorer<true>(board, 5);
 
   UCI::loop();
 }

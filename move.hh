@@ -39,7 +39,7 @@ public:
     constexpr void setTo(unsigned int to) {data &= ~0x3f; data |= to & 0x3f;}
     constexpr void setFrom(unsigned int from) {data &= ~0xfc0; data |= (from & 0x3f) << 6;}
 
-    constexpr bool is_pawn_capture() const { return getFlags() & CAPTURES_F; }
+    constexpr bool is_capture() const { return getFlags() & CAPTURES_F; }
     constexpr bool is_ep() const { return getFlags() == EP_CAPTURE_F; }
     constexpr bool is_double_push() const { return getFlags() == DOUBLE_PAWN_PUSH_F; }
 

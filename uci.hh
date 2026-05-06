@@ -19,5 +19,6 @@ public:
     static void set_position(Board& board, const std::string& fen, const std::vector<std::string>& moves);
     static Move parse_move(Board& board, std::string move);
     static string to_lower(std::string str);
+    static void clear();
 
 };
