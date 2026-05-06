@@ -12,9 +12,11 @@ class Searcher {
     static int qnodes;
 #endif
     static Move killers[MAX_PLY][MAX_KILLERS];
+    static int history[12][ILLEGAL_SQ]; // indexed by colored piece and sq_to
     static int root_game_ply; // for is_forced_draw(int ply_since_search_root)
 public:
     static void add_killer(const Move& move, int ply);
+    static void update_history(ColoredPiece moved_piece, int sq_to, int depth);
 
     static Move root_alphabeta(Board& board, int depth);
     static int alphabeta(Board& board, int alpha, int beta, int depthleft);

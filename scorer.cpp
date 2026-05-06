@@ -38,24 +38,27 @@ ScoredMove* Scorer::score(const MoveList& ml) {
         if constexpr (T == CAPTURE) {
             Piece attacker = type_of(board.Mailbox[move.getFrom()]);
             Piece victim   = type_of(board.Mailbox[move.getTo()]);
+            if (move.is_ep()) victim = PAWN; 
             cur->score     = mvv_lva[attacker][victim];
         } 
         else if constexpr (T == QUIET) {
+            cur->score = history[board.get_piece_from_sq(move.getFrom())][move.getTo()];
             if(node_killers) {
             if (move == node_killers[FIRST_KILLER])
                 cur->score = 900000;
 
-            if (move == node_killers[SECOND_KILLER])
+            else if (move == node_killers[SECOND_KILLER])
                 cur->score = 800000;
             }
         }
         else { // outofcheck
             Piece victim   = type_of(board.Mailbox[move.getTo()]);
+            if (move.is_ep()) victim = PAWN; 
             if (victim) {
             Piece attacker = type_of(board.Mailbox[move.getFrom()]);
             cur->score     = mvv_lva[attacker][victim];
             } else {
-                cur->score = 0;
+                cur->score = history[board.get_piece_from_sq(move.getFrom())][move.getTo()];
             }
 
         }
@@ -101,7 +104,7 @@ topflag:
             MoveList ml = MoveList(); 
             ml.generate_pseudolegals<QUIET>(board);
             sm_end = score<QUIET>(ml);
-            //insertion_sort(); 
+            insertion_sort(); 
             yield = sm_start;
             
             ++state;

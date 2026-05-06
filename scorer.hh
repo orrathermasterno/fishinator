@@ -2,6 +2,8 @@
 #include "move.hh"
 #include "movegen.hh"
 
+constexpr int MAX_HISTORY = 16384;
+
 enum Stage : uint8_t {
     SHASH_MOVE, 
 
@@ -35,10 +37,11 @@ class Scorer {
     ScoredMove SMoves[MAX_MOVES], *sm_start, *sm_end, *yield;
 
     const Move* node_killers;
+    const int (&history)[12][64];
 
 public:
-    Scorer(const Board& passed_board, bool is_qs, const Move* killers_for_ply) : board(passed_board), state(SHASH_MOVE),
-     current_move(nullptr), sm_start(SMoves), qsearch(is_qs), node_killers(killers_for_ply) {
+    Scorer(const Board& passed_board, bool is_qs, const Move* killers_for_ply, const int (&hist)[12][64]) : board(passed_board), state(SHASH_MOVE),
+     current_move(nullptr), sm_start(SMoves), qsearch(is_qs), node_killers(killers_for_ply), history(hist) {
         if (board.king_in_check()) state = SINIT_OUTOFCHECK;
     };
     Move next_move();
