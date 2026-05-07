@@ -15,6 +15,7 @@
     * MVV-LVA
     * Killer Heuristic
     * History Heuristic
+    * Transposition Table
 
 **Evaluation**
 * [testing purposes] [PeSTO's Evaluation Function](https://www.chessprogramming.org/PeSTO%27s_Evaluation_Function)

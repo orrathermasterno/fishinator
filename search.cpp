@@ -69,7 +69,7 @@ Move Searcher::root_alphabeta(Board& board, int depth) {
 
     TTEntry ttentry;
     ttable.get_entry(board.bs->Key, ttentry);
-    Scorer sc = Scorer(board, true, nullptr, history, ttentry.BestMove);
+    Scorer sc = Scorer(board, false, nullptr, history, ttentry.BestMove);
 
     Move current_move;
     
@@ -172,9 +172,10 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
     }
 
     if (!legals) {
-
-        if (board.king_in_check()) // checkmate
+        if (board.king_in_check()) { // checkmate
             bestValue = -CHECKMATE_VAL + ply_since_search_root;
+            hashflag = PV_NODE;
+        }
 
         else bestValue = 0; // stalemate
     }
@@ -217,7 +218,8 @@ int Searcher::quiescence(Board& board, int alpha, int beta) {
 
     TTEntry ttentry;
     ttable.get_entry(board.bs->Key, ttentry);
-    Scorer sc = Scorer(board, true, nullptr, history, ttentry.BestMove);
+    Move passmove = ttentry.BestMove.is_capture() ? ttentry.BestMove : Move::empty_move();
+    Scorer sc = Scorer(board, true, nullptr, history, passmove);
 
     Move current_move;
 

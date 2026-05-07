@@ -4,7 +4,7 @@
 #include "ttable.hh"
 #include "board.hh"
 
-constexpr int DEF_DEPTH = 6;
+constexpr int DEF_DEPTH = 8;
 constexpr int MAX_KILLERS = 2;
 constexpr int MAX_PLY = 256;
 
