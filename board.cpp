@@ -5,6 +5,7 @@
 #include <string>
 #include "attacks.hh"
 #include "prng.hh"
+#include "movegen.hh"
 
 static constexpr ColoredPiece ColoredPieces[] = {W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
                                    B_PAWN, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING};
@@ -463,6 +464,88 @@ bool Board::legal(Move& move) const {
         if (Attacks::get_between_sq_bb(attacker_sq, king_sq) & to_sq_bb) return true;
         
         return false; // neither
+    }
+
+    return true;
+}
+
+bool Board::pseudolegal(Move& move) const {
+    Color us = ActiveColor;
+    int from = move.getFrom();
+    int to = move.getTo();
+    ColoredPiece moved_piece = get_piece_from_sq(from);
+    Bitboard to_bb = set_bit(0ULL, to);
+
+    if ((get_color_bb(us) & to_bb) 
+        || !(get_color_bb(us) & set_bit(0ULL, from)))
+        return false;
+
+    if ((move.is_ep() || move.is_promotion()) && type_of(moved_piece) != PAWN) 
+        return false;
+
+    if (move.is_ep()) {
+        if (get_ep() == ILLEGAL_SQ || to != get_ep()) return false;
+        goto checkflag;
+    }
+
+    if (move.is_promotion()) {
+        if ((relative_rank(us, get_rank(from)) != RANK_7) 
+            || (relative_rank(us, get_rank(to)) != RANK_8)) return false;
+        goto checkflag;
+    }
+
+    if (move.is_castle()) {
+        if (king_in_check()) return false;
+        MoveList ml = MoveList(); 
+        
+        if (us == WHITE) ml.generate_castling<WHITE>(*this);
+        else ml.generate_castling<BLACK>(*this);
+        
+        for (const auto& m : ml)
+            if (move == m)
+                return true;
+                
+        return false;
+    }
+
+    if (type_of(moved_piece) == PAWN) {
+        if ((Rank1_const | Rank8_const) & to_bb)
+            return false;
+
+        const bool captures   = bool(Attacks::get_pawn_attack(from, us) & get_color_bb(~us) & to_bb);
+        const bool singlepush = (from + pawn_push_direction(us) == to) && !sq_occupied(to);
+        const bool doublepush = (from + 2 * pawn_push_direction(us) == to)
+                               && (relative_rank(us, get_rank(from)) == RANK_2) && !sq_occupied(to)
+                               && !sq_occupied(to - pawn_push_direction(us));
+
+        if (!(captures || singlepush || doublepush))
+            return false;
+    }
+    else if (!(Attacks::get_attack_of(type_of(moved_piece), from, get_color_bb(BOTH)) & to_bb))
+        return false;
+
+checkflag:
+    if (king_in_check()) {
+        Bitboard king_attackers = get_checkers(us, ColorBB[BOTH]);
+        int king_sq = get_king_sq(us);
+        
+        if (type_of(moved_piece) != KING) {
+            if (more_than_one(king_attackers)) return false; 
+
+            int attacker_sq = pop_lsb(king_attackers);
+            Bitboard targets = set_bit(Attacks::get_between_sq_bb(attacker_sq, king_sq), attacker_sq);
+
+            if (move.is_ep()) {
+                int captured_pawn_sq = to - pawn_push_direction(us);
+                if (!(targets & set_bit(0ULL, captured_pawn_sq))) return false;
+            } else {
+                if (!(targets & to_bb)) return false; 
+            }
+        }
+        else {
+            Bitboard occupancy_without_king = get_color_bb(BOTH) ^ set_bit(0ULL, from);
+            if (is_attacked(to, occupancy_without_king, ~us)) return false;
+        }
     }
 
     return true;

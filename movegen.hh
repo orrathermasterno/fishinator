@@ -1,7 +1,7 @@
 #pragma once
 
-#include "board.hh"
 #include "move.hh"
+class Board;
 
 constexpr int MAX_MOVES = 256;
 

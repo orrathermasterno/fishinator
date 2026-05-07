@@ -5,6 +5,8 @@
 constexpr int INFINITY_VAL = 32001;
 constexpr int CHECKMATE_VAL = 30000;
 
+typedef uint16_t Score;
+
 class Evaluator {
 public:
     static void init();

@@ -3,6 +3,7 @@
 **Board representation**
 * [Bitboards](https://www.chessprogramming.org/Bitboards) ([Little-Endian Rank-File Mapping](https://www.chessprogramming.org/Square_Mapping_Considerations#LittleEndianRankFileMapping))
 * [Magic Bitboards](https://www.chessprogramming.org/Magic_Bitboards) ([Plain](https://www.chessprogramming.org/Magic_Bitboards#Plain))
+* [Staged Move Generation](https://www.chessprogramming.org/Move_Generation#Staged)
 
 **Communication protocol**
 * [UCI](https://en.wikipedia.org/wiki/Universal_Chess_Interface)

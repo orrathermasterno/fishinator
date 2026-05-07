@@ -176,4 +176,15 @@ public:
             default: return 0ULL;
         }
     }
+
+    static inline Bitboard get_attack_of(Piece P, int sq, Bitboard blockers) {
+        switch(P) {
+            case KNIGHT: return knight_attacks[sq];
+            case KING: return king_attacks[sq];
+            case BISHOP: return get_bishop_attack(blockers, sq);
+            case ROOK: return get_rook_attack(blockers, sq);
+            case QUEEN: return get_queen_attack(blockers, sq);
+            default: return 0ULL;
+        }
+    }
 };

@@ -153,6 +153,7 @@ constexpr int pop_lsb(Bitboard& b) {
 }
 
 constexpr Rank get_rank(int sq) { return Rank(sq >> 3); }
+constexpr Rank relative_rank(Color c, Rank r) { return Rank(r ^ (c * 7)); }
 constexpr File get_file(int sq) { return File(sq & 7); }
 constexpr int flip(int sq) { return sq^56; }
 

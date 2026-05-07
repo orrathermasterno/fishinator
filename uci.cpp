@@ -76,9 +76,7 @@ void UCI::parse_position(istringstream& is) {
 }
 
 void UCI::clear() {
-    // clear searcher (killers, history)
-
-    // clear tt
+    Searcher::clear();
 }
 
 void UCI::loop() {

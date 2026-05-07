@@ -72,8 +72,10 @@ ScoredMove* Scorer::score(const MoveList& ml) {
 Move Scorer::next_move() {
 topflag:
     switch(state) {
-        case SHASH_MOVE: // imp later
+        case SHASH_MOVE: 
             ++state;
+            if(!ttmove.is_empty() && board.pseudolegal(ttmove)) return ttmove;
+            goto topflag;
 
         case SINIT_CAPTURES: {
             MoveList ml = MoveList(); 

@@ -2,6 +2,7 @@
 #include "evaluation.hh"
 #include "scorer.hh"
 #include <algorithm>
+#include <cstring>
 
 int Searcher::root_game_ply;
 
@@ -15,6 +16,7 @@ int Searcher::root_game_ply;
 \**********************************/
 Move Searcher::killers[MAX_PLY][MAX_KILLERS];
 int Searcher::history[12][ILLEGAL_SQ];
+TTable Searcher::ttable;
 
 void Searcher::add_killer(const Move& move, int ply) {
     if (move == killers[ply][FIRST_KILLER]) return;
@@ -37,9 +39,22 @@ void Searcher::update_history(ColoredPiece moved_piece, int sq_to, int bonus) {
 ==================================
 \**********************************/
 
+void Searcher::clear() {
+    memset(history, 0, sizeof(history));
+    ttable.clear();
+}
+
+void Searcher::clear_killers() {
+    memset(killers, 0, sizeof(killers));
+}
+
 #ifdef BENCH
     int Searcher::nodes;
     int Searcher::qnodes;
+
+    void Searcher::clear_bench() {
+        nodes = 0; qnodes = 0;
+    }
 #endif
 
 Move Searcher::root_alphabeta(Board& board, int depth) {
@@ -52,11 +67,14 @@ Move Searcher::root_alphabeta(Board& board, int depth) {
     int beta = INFINITY_VAL;
     int bestValue = -INFINITY_VAL;
 
-    Scorer sc = Scorer(board, false, nullptr, history);
+    TTEntry ttentry;
+    ttable.get_entry(board.bs->Key, ttentry);
+    Scorer sc = Scorer(board, true, nullptr, history, ttentry.BestMove);
 
     Move current_move;
+    
 
-     while ((current_move = sc.next_move()) != Move::empty_move()) {
+    while ((current_move = sc.next_move()) != Move::empty_move()) {
         bool is_pinned = board.is_pinned(current_move.getFrom(), us);
         if ((is_pinned || current_move.getFrom() == king_sq || current_move.is_ep()) 
             && !board.legal(current_move))
@@ -78,9 +96,11 @@ Move Searcher::root_alphabeta(Board& board, int depth) {
             }
         }
     }
+    clear_killers();
 #ifdef BENCH
     std::cout << "nodes: " << nodes << "\n";
     std::cout << "qnodes: " << qnodes << "\n";
+    clear_bench();
 #endif
     return bestmove;
 }
@@ -106,7 +126,13 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
 
     int legals = 0;
 
-    Scorer sc = Scorer(board, false, killers[ply_since_search_root], history);
+    Move bestmove = Move::empty_move();
+    NodeType hashflag = ALL_NODE;
+
+    TTEntry ttentry;
+    ttable.get_entry(board.bs->Key, ttentry);
+
+    Scorer sc = Scorer(board, false, killers[ply_since_search_root], history, ttentry.BestMove);
 
     Move current_move;
 
@@ -129,36 +155,31 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
         if(score > bestValue)
         {
             bestValue = score;
-            if(score > alpha)
+            bestmove = current_move;
+            if(score > alpha) {
+                hashflag = PV_NODE;
                 alpha = score; // alpha acts like max in MiniMax
+            }
         }
         if(score >= beta) {
             if(!current_move.is_capture() && !current_move.is_promotion()) {
                 add_killer(current_move, ply_since_search_root);
                 update_history(board.get_piece_from_sq(current_move.getFrom()), current_move.getTo(), history_bonus); // higher cutoff costs more
             }
-
-            // for(int i = 0; i < quiets; i++) {
-            //     update_history(board.get_piece_from_sq(searched_quiets[i].getFrom()), searched_quiets[i].getTo(), -history_bonus); // penalize bad moves
-            // }
+            ttable.store_entry({board.bs->Key, bestValue, CUT_NODE, depth_left, current_move});
             return bestValue;   // fail soft beta-cutoff
         }
-
-        // if(!current_move.is_capture() && !current_move.is_promotion()) {
-        //     searched_quiets[quiets] = current_move;
-        //     quiets++;
-        // }
-
     }
-
 
     if (!legals) {
 
         if (board.king_in_check()) // checkmate
-            return -CHECKMATE_VAL + ply_since_search_root;
+            bestValue = -CHECKMATE_VAL + ply_since_search_root;
 
-        return 0; // stalemate
+        else bestValue = 0; // stalemate
     }
+
+    ttable.store_entry({board.bs->Key, bestValue, hashflag, depth_left, bestmove});
 
     return bestValue;
 }
@@ -194,8 +215,9 @@ int Searcher::quiescence(Board& board, int alpha, int beta) {
             alpha = bestValue;
     }
 
-
-    Scorer sc = Scorer(board, true, nullptr, history);
+    TTEntry ttentry;
+    ttable.get_entry(board.bs->Key, ttentry);
+    Scorer sc = Scorer(board, true, nullptr, history, ttentry.BestMove);
 
     Move current_move;
 

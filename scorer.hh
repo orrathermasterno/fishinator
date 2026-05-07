@@ -1,6 +1,7 @@
 #pragma once
 #include "move.hh"
 #include "movegen.hh"
+#include "board.hh"
 
 constexpr int MAX_HISTORY = 16384;
 
@@ -33,6 +34,7 @@ class Scorer {
     const Board& board;
     Stage state;
     const Move* current_move;
+    Move ttmove;
 
     ScoredMove SMoves[MAX_MOVES], *sm_start, *sm_end, *yield;
 
@@ -40,8 +42,9 @@ class Scorer {
     const int (&history)[12][64];
 
 public:
-    Scorer(const Board& passed_board, bool is_qs, const Move* killers_for_ply, const int (&hist)[12][64]) : board(passed_board), state(SHASH_MOVE),
-     current_move(nullptr), sm_start(SMoves), qsearch(is_qs), node_killers(killers_for_ply), history(hist) {
+    Scorer(const Board& passed_board, bool is_qs, const Move* killers_for_ply, const int (&hist)[12][64], const Move _ttmove) 
+    : board(passed_board), state(SHASH_MOVE),
+     current_move(nullptr), sm_start(SMoves), qsearch(is_qs), node_killers(killers_for_ply), history(hist), ttmove(_ttmove) {
         if (board.king_in_check()) state = SINIT_OUTOFCHECK;
     };
     Move next_move();

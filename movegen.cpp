@@ -1,5 +1,6 @@
 #include "movegen.hh"
 #include "attacks.hh"
+#include "board.hh"
 
 #include <sys/time.h>
 
@@ -291,6 +292,7 @@ uint64_t Perft(Board& board, int depth)
 
     for (const Move* ptr = ml.Moves; ptr < ml.last; ++ptr) {
         Move current_move = *ptr;
+        // assert(board.pseudolegal(current_move));
 
         BoardState state = BoardState(); 
         board.make_move(current_move, state);
@@ -339,6 +341,9 @@ template void MoveList::add_pawn_moves<KNIGHT_PROM_CAPTURE_F>(Bitboard, Directio
 template void MoveList::add_pawn_moves<BISHOP_PROM_CAPTURE_F>(Bitboard, Direction);
 template void MoveList::add_pawn_moves<ROOK_PROM_CAPTURE_F>(Bitboard, Direction);
 template void MoveList::add_pawn_moves<QUEEN_PROM_CAPTURE_F>(Bitboard, Direction);
+
+template void MoveList::generate_castling<WHITE>(const Board& board);
+template void MoveList::generate_castling<BLACK>(const Board& board);
 
 
 #define INSTANTIATE_PSEUDOLEGALS(COLOR) \

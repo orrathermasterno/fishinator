@@ -222,6 +222,12 @@ public:
 
     bool legal(Move& move) const;
 
+    bool pseudolegal(Move& move) const;
+
+    inline bool sq_occupied(int sq) const {
+        return get_piece_from_sq(sq) != NO_CPIECE;
+    }
+
     inline bool is_forced_draw(int ply_since_search_root) {
         return (bs->HalfmoveClock > 99) || is_repetition(ply_since_search_root); // what if 50rule can be avoided by mate?
     }
