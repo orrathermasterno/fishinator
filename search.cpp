@@ -202,7 +202,8 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
         else if (ttentry.Type == CUT_NODE && tt_score >= beta) return tt_score;
     }
 
-    Scorer sc = Scorer(board, false, killers[ply_since_search_root], history, ttentry.BestMove);
+    Move passmove = tthit ? ttentry.BestMove : Move::empty_move();
+    Scorer sc = Scorer(board, false, killers[ply_since_search_root], history, passmove);
 
     Move current_move;
 
@@ -288,6 +289,19 @@ int Searcher::quiescence(Board& board, int alpha, int beta) {
     int bestValue = -INFINITY_VAL;
     int score;
 
+    TTEntry ttentry;
+    bool tthit = ttable.get_entry(board.bs->Key, ttentry);
+
+    bool isPV = (alpha != beta - 1);
+    if (!isPV && tthit) { 
+
+        int tt_score = score_from_tt(ttentry.Value, ply_since_search_root);
+
+        if (ttentry.Type == PV_NODE) return tt_score; 
+        else if (ttentry.Type == ALL_NODE && tt_score <= alpha) return tt_score; 
+        else if (ttentry.Type == CUT_NODE && tt_score >= beta) return tt_score;
+    }
+
     if (!in_check) {
         int static_eval = Evaluator::evaluate(board); 
         bestValue = static_eval;
@@ -299,20 +313,12 @@ int Searcher::quiescence(Board& board, int alpha, int beta) {
             alpha = bestValue;
     }
 
-    TTEntry ttentry;
-    bool tthit = ttable.get_entry(board.bs->Key, ttentry);
-
-    // bool isPV = (alpha != beta - 1);
-    // if (!isPV && tthit) { 
-
-    //     int tt_score = score_from_tt(ttentry.Value, ply_since_search_root);
-
-    //     if (ttentry.Type == PV_NODE) return tt_score; 
-    //     else if (ttentry.Type == ALL_NODE && tt_score <= alpha) return tt_score; 
-    //     else if (ttentry.Type == CUT_NODE && tt_score >= beta) return tt_score;
-    // }
-
-    Move passmove = ttentry.BestMove.is_capture() ? ttentry.BestMove : Move::empty_move();
+    Move passmove = Move::empty_move();
+    if (tthit && ttentry.BestMove != Move::empty_move()) {
+        if (in_check || ttentry.BestMove.is_capture()) {
+            passmove = ttentry.BestMove;
+        }
+    }
     Scorer sc = Scorer(board, true, nullptr, history, passmove);
 
     Move current_move;
@@ -331,16 +337,19 @@ int Searcher::quiescence(Board& board, int alpha, int beta) {
 
         board.unmake_move(current_move);
 
-        if(score >= beta) 
+        if(score >= beta){ 
             return score;
-        if(score > bestValue)
+        }
+        if(score > bestValue) {
             bestValue = score;
-        if(score > alpha)
-            alpha = score;
+            if(score > alpha) {
+                alpha = score;
+            }
+        }
     }
 
     if(in_check && bestValue == -INFINITY_VAL) { // mate
-        return -CHECKMATE_VAL + ply_since_search_root;
+        bestValue = -CHECKMATE_VAL + ply_since_search_root;
     }
 
     return bestValue;

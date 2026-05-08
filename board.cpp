@@ -183,17 +183,24 @@ void Board::parse_FEN(const std::string& fen) {
     set_pinners_and_blockers();
 
     // compute position key
-    Bitboard all_pieces_bb = get_color_bb(BOTH);
+
+    bs->Key = compute_position_key(ActiveColor, bs->EnPassant, get_color_bb(BOTH), bs->Castling);
+}
+
+PositionKey Board::compute_position_key(Color color, int ep, Bitboard all_pieces_bb, CastlingRights castling) {
+    PositionKey key = 0;
     while(all_pieces_bb) {
         int sq = pop_lsb(all_pieces_bb);
         int c_piece = Mailbox[sq];
 
-        bs->Key ^= Zobrist::piece_on_sq[c_piece][sq];
+        key ^= Zobrist::piece_on_sq[c_piece][sq];
     }
 
-    if (ActiveColor == BLACK) bs->Key ^= Zobrist::black_to_move;
-    if (bs->EnPassant != ILLEGAL_SQ) bs->Key ^= Zobrist::enpassant[get_file(bs->EnPassant)];
-    bs->Key ^= Zobrist::castling[bs->Castling];
+    if (color == BLACK) key ^= Zobrist::black_to_move;
+    if (ep != ILLEGAL_SQ) key ^= Zobrist::enpassant[get_file(ep)];
+    key ^= Zobrist::castling[castling];
+
+    return key;
 }
 
 template<MoveSwitch sw>

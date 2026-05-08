@@ -3,7 +3,7 @@
 #include "evaluation.hh"
 #include <cstring>
 
-constexpr int HASHSIZE = 1024;
+constexpr int HASHSIZE = 4096;
 constexpr int HASHMASK = HASHSIZE-1;
 
 enum NodeType: uint8_t {
@@ -61,7 +61,7 @@ public:
     inline void store_entry(const TTEntry& e) {
         int index = e.Key & HASHMASK;
 
-        if (Table[index].DepthSchemed.Key == e.Key || Table[index].DepthSchemed.Depth <= e.Depth) {
+        if (Table[index].DepthSchemed.Depth <= e.Depth) {
             Table[index].DepthSchemed = e;
         }
         else {

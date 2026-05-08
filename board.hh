@@ -95,6 +95,8 @@ public:
         ColorBB[BOTH] ^=  square_bb;
     }
 
+    PositionKey compute_position_key(Color color, int EnPassant, Bitboard pieces, CastlingRights castling);
+
     void parse_FEN(const std::string& fenStr);
 
     inline Bitboard get_color_bb(Color C) const{

@@ -9,7 +9,7 @@
 * [UCI](https://en.wikipedia.org/wiki/Universal_Chess_Interface)
 
 **Search**
-* [Alpha-Beta](https://www.chessprogramming.org/Alpha-Beta)
+* [Alpha-Beta](https://www.chessprogramming.org/Alpha-Beta), PVS
 * [Quiescence](https://www.chessprogramming.org/Quiescence_Search)
 * [Move Ordering](https://www.chessprogramming.org/Move_Ordering)
     * MVV-LVA
