@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <cstring>
 
+constexpr int MATE_BOUND = CHECKMATE_VAL - 1000;
+
 int Searcher::root_game_ply;
 
 
@@ -14,6 +16,8 @@ int Searcher::root_game_ply;
 
 ==================================
 \**********************************/
+Move Searcher::pv_table[MAX_PLY][MAX_PLY];
+int Searcher::pv_length[MAX_PLY];
 Move Searcher::killers[MAX_PLY][MAX_KILLERS];
 int Searcher::history[12][ILLEGAL_SQ];
 TTable Searcher::ttable;
@@ -31,10 +35,30 @@ void Searcher::update_history(ColoredPiece moved_piece, int sq_to, int bonus) {
         += clampedBonus - history[moved_piece][sq_to] * abs(clampedBonus) / MAX_HISTORY;
 }
 
+void Searcher::update_pv(int ply_since_search_root, Move move) {
+    pv_table[ply_since_search_root][0] = move;
+    for (int i = 0; i < pv_length[ply_since_search_root + 1]; i++) {
+        pv_table[ply_since_search_root][i + 1] = pv_table[ply_since_search_root + 1][i];
+    }
+    pv_length[ply_since_search_root] = pv_length[ply_since_search_root + 1] + 1;
+}
+
+int Searcher::score_from_tt(int tt_score, int ply) {
+    if (tt_score > MATE_BOUND) return tt_score - ply;
+    if (tt_score < -MATE_BOUND) return tt_score + ply;
+    return tt_score;
+}
+
+int Searcher::score_to_tt(int score, int ply) {
+    if (score > MATE_BOUND) return score + ply;
+    if (score < -MATE_BOUND) return score - ply;
+    return score;
+}
+
 /**********************************\
 ==================================
 
-            search
+            clear stuff
 
 ==================================
 \**********************************/
@@ -47,6 +71,20 @@ void Searcher::clear() {
 void Searcher::clear_killers() {
     memset(killers, 0, sizeof(killers));
 }
+
+void Searcher::clear_pv() {
+    memset(pv_table, 0, sizeof(pv_table));
+    memset(pv_length, 0, sizeof(pv_length));
+}
+
+
+/**********************************\
+==================================
+
+            search
+
+==================================
+\**********************************/
 
 #ifdef BENCH
     int Searcher::nodes;
@@ -66,12 +104,14 @@ Move Searcher::root_alphabeta(Board& board, int depth) {
     int alpha = -INFINITY_VAL;
     int beta = INFINITY_VAL;
     int bestValue = -INFINITY_VAL;
+    pv_length[0] = 0; // pv mess
 
     TTEntry ttentry;
     ttable.get_entry(board.bs->Key, ttentry);
     Scorer sc = Scorer(board, false, nullptr, history, ttentry.BestMove);
 
     Move current_move;
+    int legals = 0;
     
 
     while ((current_move = sc.next_move()) != Move::empty_move()) {
@@ -80,10 +120,19 @@ Move Searcher::root_alphabeta(Board& board, int depth) {
             && !board.legal(current_move))
            continue;
 
+        legals++;
         BoardState state = BoardState(); 
         board.make_move(current_move, state);
 
-        score = -alphabeta(board, -beta, -alpha, depth - 1);
+        if (legals == 1) {
+            score = -alphabeta(board, -beta, -alpha, depth - 1);
+        } else {
+            score = -alphabeta(board, -alpha - 1, -alpha, depth - 1);
+
+            if (score > alpha && score < beta) {
+                score = -alphabeta(board, -beta, -alpha, depth - 1);
+            }
+        }
 
         board.unmake_move(current_move);
 
@@ -93,6 +142,9 @@ Move Searcher::root_alphabeta(Board& board, int depth) {
             
             if (score > alpha) {
                 alpha = score;
+
+                // pv mess
+                update_pv(0, current_move);
             }
         }
     }
@@ -101,7 +153,14 @@ Move Searcher::root_alphabeta(Board& board, int depth) {
     std::cout << "nodes: " << nodes << "\n";
     std::cout << "qnodes: " << qnodes << "\n";
     clear_bench();
+    std::cout << "info depth " << depth << " score cp " << bestValue << " pv ";
+    for (int i = 0; i < pv_length[0]; i++) {
+        std::cout << pv_table[0][i].move_to_str(board.ActiveColor) << " "; 
+    }
+    std::cout << "\n";
 #endif
+
+    clear_pv();
     return bestmove;
 }
 
@@ -112,6 +171,7 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
     #endif
 
     int ply_since_search_root = board.Ply - root_game_ply;
+    pv_length[ply_since_search_root] = 0;
     
 
     if(board.is_forced_draw(ply_since_search_root)) 
@@ -130,7 +190,17 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
     NodeType hashflag = ALL_NODE;
 
     TTEntry ttentry;
-    ttable.get_entry(board.bs->Key, ttentry);
+    bool tthit = ttable.get_entry(board.bs->Key, ttentry);
+
+    bool isPV = (alpha != beta - 1);
+    if (!isPV && tthit && ttentry.Depth >= depth_left) { 
+
+        int tt_score = score_from_tt(ttentry.Value, ply_since_search_root);
+
+        if (ttentry.Type == PV_NODE) return tt_score; 
+        else if (ttentry.Type == ALL_NODE && tt_score <= alpha) return tt_score; 
+        else if (ttentry.Type == CUT_NODE && tt_score >= beta) return tt_score;
+    }
 
     Scorer sc = Scorer(board, false, killers[ply_since_search_root], history, ttentry.BestMove);
 
@@ -148,7 +218,14 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
         BoardState state = BoardState(); 
         board.make_move(current_move, state);
 
-        score = -alphabeta(board, -beta, -alpha, depth_left - 1);
+        if (legals == 1) {
+            score = -alphabeta(board, -beta, -alpha, depth_left - 1);
+        } else {
+            score = -alphabeta(board, -alpha-1, -alpha, depth_left - 1);
+
+            if((score > alpha) && (score < beta))       // if (score > alpha && beta - alpha > 1) ???
+                score = -alphabeta(board, -beta, -alpha, depth_left - 1);
+        }
 
         board.unmake_move(current_move);
 
@@ -159,6 +236,9 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
             if(score > alpha) {
                 hashflag = PV_NODE;
                 alpha = score; // alpha acts like max in MiniMax
+
+                // pv mess
+                update_pv(ply_since_search_root, current_move);
             }
         }
         if(score >= beta) {
@@ -166,7 +246,9 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
                 add_killer(current_move, ply_since_search_root);
                 update_history(board.get_piece_from_sq(current_move.getFrom()), current_move.getTo(), history_bonus); // higher cutoff costs more
             }
-            ttable.store_entry({board.bs->Key, bestValue, CUT_NODE, depth_left, current_move});
+
+            int tt_score = score_to_tt(bestValue, ply_since_search_root);
+            ttable.store_entry({board.bs->Key, tt_score, CUT_NODE, depth_left, current_move});
             return bestValue;   // fail soft beta-cutoff
         }
     }
@@ -180,7 +262,8 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
         else bestValue = 0; // stalemate
     }
 
-    ttable.store_entry({board.bs->Key, bestValue, hashflag, depth_left, bestmove});
+    int tt_score = score_to_tt(bestValue, ply_since_search_root);
+    ttable.store_entry({board.bs->Key, tt_score, hashflag, depth_left, bestmove});
 
     return bestValue;
 }
@@ -217,7 +300,18 @@ int Searcher::quiescence(Board& board, int alpha, int beta) {
     }
 
     TTEntry ttentry;
-    ttable.get_entry(board.bs->Key, ttentry);
+    bool tthit = ttable.get_entry(board.bs->Key, ttentry);
+
+    // bool isPV = (alpha != beta - 1);
+    // if (!isPV && tthit) { 
+
+    //     int tt_score = score_from_tt(ttentry.Value, ply_since_search_root);
+
+    //     if (ttentry.Type == PV_NODE) return tt_score; 
+    //     else if (ttentry.Type == ALL_NODE && tt_score <= alpha) return tt_score; 
+    //     else if (ttentry.Type == CUT_NODE && tt_score >= beta) return tt_score;
+    // }
+
     Move passmove = ttentry.BestMove.is_capture() ? ttentry.BestMove : Move::empty_move();
     Scorer sc = Scorer(board, true, nullptr, history, passmove);
 
