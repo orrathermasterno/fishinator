@@ -54,5 +54,5 @@ template<bool isRoot>
 uint64_t Perft(Board& board, int depth);
 
 #ifdef BENCH
-uint64_t get_time_ms()
+uint64_t get_time_ms();
 #endif
