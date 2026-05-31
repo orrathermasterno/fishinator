@@ -10,12 +10,14 @@ constexpr int MAX_PLY = 256;
 
 class Searcher {
 #ifdef BENCH
-    static int nodes;
-    static int qnodes;
+    static long long nodes;
+    static long long qnodes;
+    static long long children;
+    static long long qchildren;
     static void clear_bench();
 #endif
-    static Move pv_table[MAX_PLY][MAX_PLY];
-    static int pv_length[MAX_PLY];
+    // static Move pv_table[MAX_PLY][MAX_PLY];
+    // static int pv_length[MAX_PLY];
     static Move killers[MAX_PLY][MAX_KILLERS];
     static int history[12][ILLEGAL_SQ]; // indexed by colored piece and sq_to
     static int root_game_ply; // for is_forced_draw(int ply_since_search_root)
@@ -23,9 +25,9 @@ class Searcher {
 public:
     static void clear();
     static void clear_killers();
-    static void clear_pv();
+   // static void clear_pv();
 
-    static void update_pv(int ply_since_search_root, Move move);
+   // static void update_pv(int ply_since_search_root, Move move);
 
     static void add_killer(const Move& move, int ply);
     static void update_history(ColoredPiece moved_piece, int sq_to, int depth);

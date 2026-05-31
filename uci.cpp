@@ -43,7 +43,7 @@ void UCI::set_position(Board& board, const std::string& fen, const std::vector<s
         if (m.is_empty())
             break;
 
-        state_history.push_back(BoardState());
+        state_history.push_back(CopyMake());
         
         board.make_move(m, state_history.back());
     }

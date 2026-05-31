@@ -10,7 +10,7 @@ using std::cout, std::skipws, std::istringstream, std::string, std::vector, std:
 
 class UCI {
     inline static Board board;
-    inline static vector<BoardState> state_history;
+    inline static vector<CopyMake> state_history;
 public:
 
     static void loop();

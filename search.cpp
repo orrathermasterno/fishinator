@@ -16,8 +16,8 @@ int Searcher::root_game_ply;
 
 ==================================
 \**********************************/
-Move Searcher::pv_table[MAX_PLY][MAX_PLY];
-int Searcher::pv_length[MAX_PLY];
+// Move Searcher::pv_table[MAX_PLY][MAX_PLY];
+// int Searcher::pv_length[MAX_PLY];
 Move Searcher::killers[MAX_PLY][MAX_KILLERS];
 int Searcher::history[12][ILLEGAL_SQ];
 TTable Searcher::ttable;
@@ -35,13 +35,13 @@ void Searcher::update_history(ColoredPiece moved_piece, int sq_to, int bonus) {
         += clampedBonus - history[moved_piece][sq_to] * abs(clampedBonus) / MAX_HISTORY;
 }
 
-void Searcher::update_pv(int ply_since_search_root, Move move) {
-    pv_table[ply_since_search_root][0] = move;
-    for (int i = 0; i < pv_length[ply_since_search_root + 1]; i++) {
-        pv_table[ply_since_search_root][i + 1] = pv_table[ply_since_search_root + 1][i];
-    }
-    pv_length[ply_since_search_root] = pv_length[ply_since_search_root + 1] + 1;
-}
+// void Searcher::update_pv(int ply_since_search_root, Move move) {
+//     pv_table[ply_since_search_root][0] = move;
+//     for (int i = 0; i < pv_length[ply_since_search_root + 1]; i++) {
+//         pv_table[ply_since_search_root][i + 1] = pv_table[ply_since_search_root + 1][i];
+//     }
+//     pv_length[ply_since_search_root] = pv_length[ply_since_search_root + 1] + 1;
+// }
 
 int Searcher::score_from_tt(int tt_score, int ply) {
     if (tt_score > MATE_BOUND) return tt_score - ply;
@@ -72,10 +72,10 @@ void Searcher::clear_killers() {
     memset(killers, 0, sizeof(killers));
 }
 
-void Searcher::clear_pv() {
-    memset(pv_table, 0, sizeof(pv_table));
-    memset(pv_length, 0, sizeof(pv_length));
-}
+// void Searcher::clear_pv() {
+//     memset(pv_table, 0, sizeof(pv_table));
+//     memset(pv_length, 0, sizeof(pv_length));
+// }
 
 
 /**********************************\
@@ -87,8 +87,10 @@ void Searcher::clear_pv() {
 \**********************************/
 
 #ifdef BENCH
-    int Searcher::nodes;
-    int Searcher::qnodes;
+    long long Searcher::nodes;
+    long long Searcher::qnodes;
+    long long Searcher::children = 0;
+    long long Searcher::qchildren = 0;
 
     void Searcher::clear_bench() {
         nodes = 0; qnodes = 0;
@@ -104,7 +106,12 @@ Move Searcher::root_alphabeta(Board& board, int depth) {
     int alpha = -INFINITY_VAL;
     int beta = INFINITY_VAL;
     int bestValue = -INFINITY_VAL;
-    pv_length[0] = 0; // pv mess
+    // pv_length[0] = 0; // pv mess
+
+        #ifdef BENCH
+        nodes++;
+        uint64_t start = get_time_ms();
+    #endif
 
     TTEntry ttentry;
     ttable.get_entry(board.bs->Key, ttentry);
@@ -121,7 +128,10 @@ Move Searcher::root_alphabeta(Board& board, int depth) {
            continue;
 
         legals++;
-        BoardState state = BoardState(); 
+                #ifdef BENCH
+            children++;
+        #endif
+        CopyMake state = CopyMake(); 
         board.make_move(current_move, state);
 
         if (legals == 1) {
@@ -144,34 +154,31 @@ Move Searcher::root_alphabeta(Board& board, int depth) {
                 alpha = score;
 
                 // pv mess
-                update_pv(0, current_move);
+                // update_pv(0, current_move);
             }
         }
     }
     clear_killers();
-#ifdef BENCH
+        #ifdef BENCH
+        uint64_t end = get_time_ms();
+        uint64_t time = end-start;
     std::cout << "nodes: " << nodes << "\n";
     std::cout << "qnodes: " << qnodes << "\n";
-    clear_bench();
-    std::cout << "info depth " << depth << " score cp " << bestValue << " pv ";
-    for (int i = 0; i < pv_length[0]; i++) {
-        std::cout << pv_table[0][i].move_to_str(board.ActiveColor) << " "; 
-    }
-    std::cout << "\n";
+    std::cout << "total intnodes: " << qnodes+nodes << "\n";
+    double ab_bf = nodes ? double(children) / nodes : 0.0;
+    double q_bf  = qnodes ? double(qchildren) / qnodes : 0.0;
+    double total_bf = (nodes + qnodes) ? double(children + qchildren) / (nodes + qnodes) : 0.0;
+    std::cout << "total_bf: " << total_bf << "; ab_bf: " << ab_bf << "; q_bf: " << q_bf << "\n" << "time: " << time << "ms\n";
 #endif
-
-    clear_pv();
+    // clear_pv();
     return bestmove;
 }
 
 int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
     if(depth_left == 0) return quiescence(board, alpha, beta);
-    #ifdef BENCH
-        nodes++;
-    #endif
 
     int ply_since_search_root = board.Ply - root_game_ply;
-    pv_length[ply_since_search_root] = 0;
+    // pv_length[ply_since_search_root] = 0;
     
 
     if(board.is_forced_draw(ply_since_search_root)) 
@@ -215,8 +222,12 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
            continue;
 
         legals++;
+                #ifdef BENCH
+            children++;
+            if (legals == 1) nodes++;
+        #endif
 
-        BoardState state = BoardState(); 
+        CopyMake state = CopyMake(); 
         board.make_move(current_move, state);
 
         if (legals == 1) {
@@ -239,7 +250,7 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
                 alpha = score; // alpha acts like max in MiniMax
 
                 // pv mess
-                update_pv(ply_since_search_root, current_move);
+                // update_pv(ply_since_search_root, current_move);
             }
         }
         if(score >= beta) {
@@ -278,10 +289,6 @@ int Searcher::quiescence(Board& board, int alpha, int beta) {
     Color us = board.ActiveColor;
     int king_sq = board.get_king_sq(us);
     int ply_since_search_root = board.Ply - root_game_ply;
-
-    #ifdef BENCH
-        qnodes++;
-    #endif
 
     if(board.is_forced_draw(ply_since_search_root)) 
         return 0;
@@ -323,6 +330,10 @@ int Searcher::quiescence(Board& board, int alpha, int beta) {
 
     Move current_move;
 
+        #ifdef BENCH
+        int evaluated_moves = 0;
+    #endif
+
     while ((current_move = sc.next_move()) != Move::empty_move()) {
 
         bool is_pinned = board.is_pinned(current_move.getFrom(), us);
@@ -330,7 +341,13 @@ int Searcher::quiescence(Board& board, int alpha, int beta) {
             && !board.legal(current_move))
            continue;
 
-        BoardState state = BoardState(); 
+                #ifdef BENCH
+            evaluated_moves++;
+            qchildren++;
+            if (evaluated_moves == 1) qnodes++;
+        #endif
+        
+        CopyMake state = CopyMake(); 
         board.make_move(current_move, state);
 
         score = -quiescence(board, -beta, -alpha);

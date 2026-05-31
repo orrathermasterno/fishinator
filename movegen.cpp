@@ -257,13 +257,15 @@ void MoveList::generate_all_legals(const Board& board) {
 
 ==================================
 \**********************************/
+#include <chrono>
 
-int get_time_ms()
-{
-  struct timeval time_value;
-  gettimeofday(&time_value, NULL);
-  return time_value.tv_sec * 1000 + time_value.tv_usec / 1000;
+#ifdef BENCH
+uint64_t get_time_ms() {
+    auto now = std::chrono::steady_clock::now();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+               now.time_since_epoch()).count();
 }
+#endif
 
 template<bool isRoot>
 uint64_t Perft(Board& board, int depth)
@@ -294,7 +296,7 @@ uint64_t Perft(Board& board, int depth)
         Move current_move = *ptr;
         // assert(board.pseudolegal(current_move));
 
-        BoardState state = BoardState(); 
+        CopyMake state = CopyMake(); 
         board.make_move(current_move, state);
         
         count = Perft<false>(board, depth - 1);

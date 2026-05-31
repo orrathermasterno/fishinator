@@ -27,7 +27,7 @@ struct Zobrist {
 };
 
 // irreversible stuff for Copy-Make
-struct BoardState {
+struct CopyMake {
     PositionKey Key;
     CastlingRights Castling;
     int EnPassant;
@@ -36,9 +36,9 @@ struct BoardState {
     int HalfmoveClock;
     int Repetition;
 
-    BoardState* Previous; 
+    CopyMake* Previous; 
 
-    BoardState() {
+    CopyMake() {
         Key = 0; HalfmoveClock = 0; Repetition = 0;
         EnPassant = ILLEGAL_SQ;
         Castling = NO_CASTLING;
@@ -48,7 +48,7 @@ struct BoardState {
 };
 
 class Board {
-    BoardState root_state;
+    CopyMake root_state;
 public:
     // piece boards 
     Bitboard PieceBB[ALL_PIECES];
@@ -56,7 +56,7 @@ public:
     ColoredPiece Mailbox[SQ_AMOUNT];
 
     Color ActiveColor;
-    BoardState* bs;
+    CopyMake* bs;
 
     int Ply;
 
@@ -219,7 +219,7 @@ public:
     template<MoveSwitch sw>
     void castle(ColoredPiece& crook, int& rook_sq_from, int& rook_sq_to, bool kingside);
 
-    void make_move(Move& move, BoardState& new_state);
+    void make_move(Move& move, CopyMake& new_state);
     void unmake_move(Move& move);
 
     bool legal(Move& move) const;

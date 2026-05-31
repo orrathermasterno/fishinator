@@ -37,7 +37,7 @@
         
 //         if (!board.legal(current_move))
 //           continue;
-//         BoardState state = BoardState(); 
+//         CopyMake state = CopyMake(); 
 //         board.make_move(current_move, state);
         
 //         count = Perft_scorer<false>(board, depth - 1);

@@ -15,7 +15,7 @@ void Board::clear() {
     ActiveColor = WHITE;
     Ply = 0;
 
-    root_state = BoardState();
+    root_state = CopyMake();
     bs = &root_state;
 
     std::fill(Mailbox, Mailbox + SQ_AMOUNT, NO_CPIECE);
@@ -306,7 +306,7 @@ void Board::set_pinners_and_blockers(Color ColorToUpdate) const {
     }
 }
 
-void Board::make_move(Move& move, BoardState& new_state) {
+void Board::make_move(Move& move, CopyMake& new_state) {
 
     int from_square = move.getFrom();
     int to_square = move.getTo();
@@ -377,7 +377,7 @@ void Board::make_move(Move& move, BoardState& new_state) {
 
     // repetition eager eval
     if (bs->HalfmoveClock >= 4) { // position cannot repeat in less than 4 moves
-        BoardState* prevprev_state = bs->Previous->Previous;
+        CopyMake* prevprev_state = bs->Previous->Previous;
         for (int i = 4; i <= bs->HalfmoveClock; i += 2) {
             prevprev_state = prevprev_state->Previous->Previous; // i++ going from current move backwards
             if(prevprev_state->Key == bs->Key) {
