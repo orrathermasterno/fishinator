@@ -281,7 +281,7 @@ uint64_t Perft(Board& board, int depth)
     int them = us ^ 1;    
 
 #ifdef BENCH
-    int start_time = 0;
+    uint64_t start_time = 0;
     if (isRoot) {
         start_time = get_time_ms();
     }
@@ -311,7 +311,7 @@ uint64_t Perft(Board& board, int depth)
 
 #ifdef BENCH
     if (isRoot) {
-        int elapsed = get_time_ms() - start_time;
+        uint64_t elapsed = get_time_ms() - start_time;
         
         std::cout << "depth       : " << depth << "\n";
         std::cout << "time (ms)   : " << elapsed << "\n";

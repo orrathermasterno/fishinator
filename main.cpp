@@ -79,8 +79,8 @@ int main() {
   Evaluator::init();
   Zobrist::init();
 
-  // Board board = Board();
-  //  board.parse_FEN("8/qpKP3k/8/2P1N3/8/8/8/8 w - - 0 1");
+  //  Board board = Board();
+  //   board.parse_FEN("8/qpKP3k/8/2P1N3/8/8/8/8 w - - 0 1");
   //  Move move = Move(c5, b6, EP_CAPTURE_F);
   //  cout << board.pseudolegal(move);
 //   MoveList ml = MoveList();
@@ -88,6 +88,7 @@ int main() {
 //   print_movelist(board, ml);
  // cout << Perft_scorer<true>(board, 5);
 
+  //cout << Evaluator::evaluate(board);
 
    UCI::loop();
 }

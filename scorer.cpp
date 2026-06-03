@@ -59,6 +59,7 @@ ScoredMove* Scorer::score(const MoveList& ml) {
             cur->score     = mvv_lva[attacker][victim];
             } else {
                 cur->score = history[board.get_piece_from_sq(move.getFrom())][move.getTo()];
+                // killers?
             }
 
         }
