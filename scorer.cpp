@@ -73,7 +73,12 @@ Move Scorer::next_move() {
 topflag:
     switch(state) {
         case SHASH_MOVE: 
-            ++state;
+            if (in_check) {
+                state = SINIT_OUTOFCHECK;
+            } else {
+                state = SINIT_CAPTURES;
+            }
+
             if(!ttmove.is_empty() && board.pseudolegal(ttmove)) return ttmove;
             goto topflag;
 
@@ -98,11 +103,11 @@ topflag:
                 return best_capture;              
             }
             
+            if (qsearch) return Move::empty_move();
             ++state;
             goto topflag;
 
         case SINIT_QUIETS: {
-            if(qsearch) return Move::empty_move();
             MoveList ml = MoveList(); 
             ml.generate_pseudolegals<QUIET>(board);
             sm_end = score<QUIET>(ml);
@@ -140,7 +145,7 @@ topflag:
                 yield++;
                 return next_ev;
             }
-            ++state;
+            return Move::empty_move();
 
         default:
             return Move::empty_move();

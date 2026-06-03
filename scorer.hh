@@ -31,6 +31,7 @@ public:
 // state machine
 class Scorer {
     bool qsearch;
+    bool in_check; 
     const Board& board;
     Stage state;
     const Move* current_move;
@@ -44,9 +45,11 @@ class Scorer {
 public:
     Scorer(const Board& passed_board, bool is_qs, const Move* killers_for_ply, const int (&hist)[12][64], const Move _ttmove) 
     : board(passed_board), state(SHASH_MOVE),
-     current_move(nullptr), sm_start(SMoves), qsearch(is_qs), node_killers(killers_for_ply), history(hist), ttmove(_ttmove) {
-        if (board.king_in_check()) state = SINIT_OUTOFCHECK;
+      current_move(nullptr), sm_start(SMoves), qsearch(is_qs), node_killers(killers_for_ply), history(hist), ttmove(_ttmove),
+      in_check(passed_board.king_in_check()) // NEW: Initialize here
+    {
     };
+
     Move next_move();
 
     template<MoveType T>

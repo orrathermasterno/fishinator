@@ -125,7 +125,10 @@ void UCI::loop() {
                 cout << "total nodes: " << nodes << endl;
             } 
             else {
-                Move bestmove = Searcher::root_alphabeta(board, depth);
+                Move bestmove = Move::empty_move();
+                for (int d = 1; d <= depth; d++) {
+                    bestmove = Searcher::root_alphabeta(board, d);
+                }
                 cout << "bestmove " << bestmove.move_to_str(board.ActiveColor) << endl;
             }
         }

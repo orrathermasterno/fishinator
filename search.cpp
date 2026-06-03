@@ -114,8 +114,9 @@ Move Searcher::root_alphabeta(Board& board, int depth) {
     #endif
 
     TTEntry ttentry;
-    ttable.get_entry(board.bs->Key, ttentry);
-    Scorer sc = Scorer(board, false, nullptr, history, ttentry.BestMove);
+    bool tthit = ttable.get_entry(board.bs->Key, ttentry);
+    Move root_passmove = tthit ? ttentry.BestMove : Move::empty_move();
+    Scorer sc = Scorer(board, false, nullptr, history, root_passmove);
 
     Move current_move;
     int legals = 0;
@@ -199,15 +200,15 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
     TTEntry ttentry;
     bool tthit = ttable.get_entry(board.bs->Key, ttentry);
 
-    bool isPV = (alpha != beta - 1);
-    if (!isPV && tthit && ttentry.Depth >= depth_left) { 
+    // bool isPV = (alpha != beta - 1);
+    // if (!isPV && tthit && ttentry.Depth >= depth_left) { 
 
-        int tt_score = score_from_tt(ttentry.Value, ply_since_search_root);
+    //     int tt_score = score_from_tt(ttentry.Value, ply_since_search_root);
 
-        if (ttentry.Type == PV_NODE) return tt_score; 
-        else if (ttentry.Type == ALL_NODE && tt_score <= alpha) return tt_score; 
-        else if (ttentry.Type == CUT_NODE && tt_score >= beta) return tt_score;
-    }
+    //     if (ttentry.Type == PV_NODE) return tt_score; 
+    //     else if (ttentry.Type == ALL_NODE && tt_score <= alpha) return tt_score; 
+    //     else if (ttentry.Type == CUT_NODE && tt_score >= beta) return tt_score;
+    // }
 
     Move passmove = tthit ? ttentry.BestMove : Move::empty_move();
     Scorer sc = Scorer(board, false, killers[ply_since_search_root], history, passmove);
@@ -266,9 +267,9 @@ int Searcher::alphabeta(Board& board, int alpha, int beta, int depth_left) {
     }
 
     if (!legals) {
+        hashflag = PV_NODE;
         if (board.king_in_check()) { // checkmate
             bestValue = -CHECKMATE_VAL + ply_since_search_root;
-            hashflag = PV_NODE;
         }
 
         else bestValue = 0; // stalemate
@@ -299,15 +300,15 @@ int Searcher::quiescence(Board& board, int alpha, int beta) {
     TTEntry ttentry;
     bool tthit = ttable.get_entry(board.bs->Key, ttentry);
 
-    bool isPV = (alpha != beta - 1);
-    if (!isPV && tthit) { 
+    // bool isPV = (alpha != beta - 1);
+    // if (!isPV && tthit) { 
 
-        int tt_score = score_from_tt(ttentry.Value, ply_since_search_root);
+    //     int tt_score = score_from_tt(ttentry.Value, ply_since_search_root);
 
-        if (ttentry.Type == PV_NODE) return tt_score; 
-        else if (ttentry.Type == ALL_NODE && tt_score <= alpha) return tt_score; 
-        else if (ttentry.Type == CUT_NODE && tt_score >= beta) return tt_score;
-    }
+    //     if (ttentry.Type == PV_NODE) return tt_score; 
+    //     else if (ttentry.Type == ALL_NODE && tt_score <= alpha) return tt_score; 
+    //     else if (ttentry.Type == CUT_NODE && tt_score >= beta) return tt_score;
+    // }
 
     if (!in_check) {
         int static_eval = Evaluator::evaluate(board); 
